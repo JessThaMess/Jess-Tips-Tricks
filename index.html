@@ -115,11 +115,16 @@
         #tickerLocationTitle {
             justify-content: center;
         }
+
+        /* Modal specific styles */
+        .modal-overlay {
+            z-index: 1000;
+        }
     </style>
 </head>
 <body class="font-sans flex items-center justify-center p-4">
     
-    <div class="container w-full bg-card-bg p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700">
+    <div id="mainContent" class="container w-full bg-card-bg p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700 hidden">
         
         <header class="text-center mb-4">
             <h1 class="text-3xl font-extrabold text-primary">SMOKE FINDER</h1>
@@ -244,8 +249,22 @@
         
         <!-- Footer for Creator Credit -->
         <footer class="text-center mt-6 pt-4 border-t border-gray-700">
-            <p class="text-xs text-gray-500">Created by: <span class="font-semibold text-primary">Jess-Hobo-LLC</span></p>
+            <p class="text-xs text-gray-500">Created by: <span class="font-semibold text-purple-400">Jess-Hobo-LLC</span></p>
         </footer>
+    </div>
+    
+    <!-- Age Verification Modal (Always on top initially) -->
+    <div id="ageVerificationModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4">
+        <div class="bg-card-bg p-6 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl text-center">
+            <h3 class="text-2xl font-extrabold text-secondary mb-4">Age Verification Required</h3>
+            <p class="text-gray-300 mb-6 text-sm">
+                By clicking "I Am Of Legal Age," you confirm that you are of legal smoking age in your jurisdiction.
+                This application is intended for informational use only and is not intended to promote or sell tobacco products.
+            </p>
+            <button id="confirmAgeBtn" class="w-full p-3 bg-primary text-white font-bold rounded-lg hover:bg-opacity-90 transition duration-150">
+                I Am Of Legal Age
+            </button>
+        </div>
     </div>
 
     <!-- Firebase Imports - MUST be type="module" -->
@@ -268,7 +287,7 @@
         const EN_STRINGS = {
             locationFinding: "Finding location...",
             locationFallback: "Fallback: ",
-            mockDataDisclaimer: "Using mock data.",
+            mockDataDisclaimer: "Using mock data (prices/locations are averages).",
             loadingPrices: "Loading pack prices...",
             loadingShops: "Loading shops...",
             itemRoller: "Roller",
@@ -312,7 +331,8 @@
         // --- GLOBALS AND UI ELEMENTS ---
         let CURRENT_PRICES = { ...LOCAL_AVG_PRICES };
         let favorites = new Set(); // Stores favorited store IDs as strings
-        
+        let isAgeConfirmed = false; 
+
         // Firebase Globals
         let db, auth;
         let userId = null;
@@ -331,37 +351,27 @@
         const $ = selector => document.querySelector(selector);
         const $$ = selector => document.querySelectorAll(selector);
 
-        // Core App Elements
-        const $moneyAvailable = $('#moneyAvailable');
-        const $calculateBtn = $('#calculateBtn');
-        const $planDetails = $('#planDetails');
-        const $totalSpent = $('#totalSpent');
-        const $moneyRemaining = $('#moneyRemaining');
-        const $cigsMade = $('#cigsMade'); 
-        const $priceTicker = $('#priceTicker');
-        const $priceTickerContainer = $('#priceTickerContainer');
-        
-        // Location Status Elements
-        const $locationStatus = $('#locationStatus');
-        const $tickerLocationTitle = $('#tickerLocationTitle');
-        const $tickerDisclaimer = $('#tickerDisclaimer');
-        
-        // Modal and Editor Elements
-        const $editorBtn = $('#editorBtn');
-        const $priceEditorModal = $('#priceEditorModal');
-        const $saveAndCloseEditorBtn = $('#saveAndCloseEditorBtn');
-        const $resetPricesBtn = $('#resetPricesBtn');
-        const $editorInputs = $('#editorInputs');
-        
-        // Tab Elements
-        const $tabButtons = $$('.tab-button');
-        const $calculatorContent = $('#calculatorContent');
-        const $localHubContent = $('#localHubContent');
-        const $localStoreList = $('#localStoreList');
+        // Core App Elements 
+        let $mainContent, $moneyAvailable, $calculateBtn, $planDetails, $totalSpent, $moneyRemaining, $cigsMade, $priceTicker, $priceTickerContainer;
+        let $locationStatus, $tickerLocationTitle, $tickerDisclaimer;
+        let $editorBtn, $priceEditorModal, $saveAndCloseEditorBtn, $resetPricesBtn, $editorInputs;
+        let $ageVerificationModal, $confirmAgeBtn; 
+        let $tabButtons, $calculatorContent, $localHubContent, $localStoreList;
+
 
         let requiredItems = {
             roller: true, tubes: true, papers: true, tobacco: true,
         };
+
+        // --- AGE VERIFICATION LOGIC ---
+        function confirmAge() {
+            isAgeConfirmed = true;
+            $ageVerificationModal.classList.add('hidden');
+            $mainContent.classList.remove('hidden');
+            // Once age is confirmed, start the rest of the app initialization
+            initializeAppAsync();
+        }
+
 
         // --- FIREBASE SETUP AND DATA PERSISTENCE ---
 
@@ -371,7 +381,7 @@
                 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                 
                 if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebase config is missing.");
+                    console.error("Firebase config is missing. Data persistence will be local only.");
                     return;
                 }
                 
@@ -391,18 +401,21 @@
                     if (user) {
                         userId = user.uid;
                         isAuthReady = true;
-                        console.log("Firebase Auth Ready. User ID:", userId);
+                        // console.log("Firebase Auth Ready. User ID:", userId);
                         setupFavoritesListener(); 
                         setupPricesListener(); 
                     } else {
+                        // Use a random ID if anonymous sign-in failed, though this shouldn't happen
                         userId = crypto.randomUUID(); 
                         isAuthReady = true;
-                        console.log("Firebase Auth Ready, No Auth User. Using Random ID.");
+                        // console.log("Firebase Auth Ready, No Auth User. Using Random ID.");
                     }
                 });
 
             } catch (error) {
                 console.error("Firebase setup error:", error);
+                // Fallback to local data handling if setup fails
+                isAuthReady = true; 
             }
         }
 
@@ -416,7 +429,11 @@
 
         function setupFavoritesListener() {
             const docRef = getFavoritesDocRef();
-            if (!docRef) return;
+            if (!docRef) {
+                // If docRef is null, Firebase is not ready, rely on local state/mock data
+                renderLocalStoreList(); 
+                return;
+            }
 
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists() && docSnap.data().storeIds) {
@@ -427,6 +444,7 @@
                 renderLocalStoreList();
             }, (error) => {
                 console.error("Error listening to favorites:", error);
+                // Continue with local state on error
             });
         }
 
@@ -445,6 +463,8 @@
             }
 
             const docRef = getFavoritesDocRef();
+            if (!docRef) return;
+
             try {
                 await setDoc(docRef, { storeIds: newFavoritesArray }, { merge: true });
             } catch (e) {
@@ -462,25 +482,35 @@
 
         function setupPricesListener() {
             const docRef = getPricesDocRef();
-            if (!docRef) return;
+            if (!docRef) {
+                // If docRef is null, Firebase is not ready, rely on CURRENT_PRICES default
+                calculateOptimalPurchase();
+                if ($priceEditorModal && !$priceEditorModal.classList.contains('hidden')) {
+                    renderEditorInputs();
+                }
+                return;
+            }
 
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists() && docSnap.data().prices) {
-                    // Merge loaded prices into the CURRENT_PRICES structure
-                    const loadedPrices = JSON.parse(docSnap.data().prices);
-                    for(const key in loadedPrices) {
-                        if (CURRENT_PRICES[key]) {
-                            CURRENT_PRICES[key] = { ...CURRENT_PRICES[key], ...loadedPrices[key] };
+                    try {
+                        const loadedPrices = JSON.parse(docSnap.data().prices);
+                        for(const key in loadedPrices) {
+                            if (CURRENT_PRICES[key]) {
+                                // Only update the cost field from stored data
+                                CURRENT_PRICES[key] = { ...CURRENT_PRICES[key], cost: loadedPrices[key].cost };
+                            }
                         }
+                    } catch (e) {
+                        console.error("Error parsing custom prices from Firestore:", e);
                     }
-                    console.log("Custom prices loaded.");
                 } else {
-                    console.log("No custom prices found. Using defaults.");
+                    // console.log("No custom prices found. Using defaults.");
                     CURRENT_PRICES = { ...LOCAL_AVG_PRICES };
                 }
                 // Recalculate and re-render the editor to reflect loaded prices
                 calculateOptimalPurchase();
-                if (!$priceEditorModal.classList.contains('hidden')) {
+                if ($priceEditorModal && !$priceEditorModal.classList.contains('hidden')) {
                     renderEditorInputs();
                 }
             }, (error) => {
@@ -494,15 +524,17 @@
                 return;
             }
             const docRef = getPricesDocRef();
+            if (!docRef) return;
+
             try {
                 // Prepare minimal data for storage (only cost needs saving)
                 const priceData = {};
                 for(const key in CURRENT_PRICES) {
-                    priceData[key] = { cost: CURRENT_PRICES[key].cost };
+                    // Ensure cost is stored as a number for consistency
+                    priceData[key] = { cost: parseFloat(CURRENT_PRICES[key].cost) };
                 }
                 // Store as a JSON string for reliability in Firestore
                 await setDoc(docRef, { prices: JSON.stringify(priceData) }, { merge: true });
-                console.log("Custom prices saved.");
             } catch (e) {
                 console.error("Error saving custom prices: ", e);
             }
@@ -513,7 +545,7 @@
         function getGeolocation() {
             return new Promise(resolve => {
                 if (!navigator.geolocation) {
-                    $tickerLocationTitle.innerHTML = `<span class="text-danger">GPS Unavailable</span>`;
+                    if ($tickerLocationTitle) $tickerLocationTitle.innerHTML = `<span class="text-danger">GPS Unavailable</span>`;
                     resolve();
                     return;
                 }
@@ -523,10 +555,11 @@
                     userLocation.longitude = position.coords.longitude;
                     userLocation.isAccurate = true;
 
+                    // Simple check to determine if location is significantly different from fallback
                     const distanceLat = Math.abs(userLocation.latitude - 40.6480);
                     const distanceLon = Math.abs(userLocation.longitude - -111.8887);
 
-                    if (distanceLat > 0.5 || distanceLon > 0.5) {
+                    if (distanceLat > 0.1 || distanceLon > 0.1) {
                         userLocation.city = "Your Local Area";
                         userLocation.state = "";
                     } else {
@@ -537,6 +570,7 @@
                 };
 
                 const error = (err) => {
+                    console.error("Geolocation error:", err.code, err.message);
                     resolve();
                 };
 
@@ -551,12 +585,18 @@
         // --- UI RENDERERS ---
 
         function updateTickerTitle() {
+            if (!$tickerLocationTitle || !$tickerDisclaimer) return;
+            
             let locationText = EN_STRINGS.locationFinding;
             
             if (userLocation.isAccurate) {
                 locationText = `${userLocation.city}${userLocation.state ? ', ' + userLocation.state : ''}`;
+                $tickerDisclaimer.textContent = ""; 
+                $tickerDisclaimer.classList.add('hidden');
             } else {
                 locationText = EN_STRINGS.locationFallback + `${userLocation.city}, ${userLocation.state}`;
+                $tickerDisclaimer.textContent = EN_STRINGS.mockDataDisclaimer;
+                $tickerDisclaimer.classList.remove('hidden');
             }
             
             $tickerLocationTitle.innerHTML = `
@@ -565,7 +605,6 @@
                 </svg>
                 <span>${locationText}</span>
             `;
-            $tickerDisclaimer.textContent = EN_STRINGS.mockDataDisclaimer;
         }
 
         function renderTickerItem(cig) {
@@ -585,6 +624,7 @@
         }
         
         function renderPriceTicker() {
+            if (!$priceTicker) return;
             $priceTicker.innerHTML = ''; 
             if (LOCAL_CIGARETTES.length === 0) {
                  $priceTicker.innerHTML = `<p class="text-gray-500 p-3">${EN_STRINGS.loadingPrices}</p>`;
@@ -668,7 +708,9 @@
 
         // --- EDITOR MODAL FUNCTIONALITY ---
         function renderEditorInputs() {
+            if (!$editorInputs) return;
             $editorInputs.innerHTML = '';
+            // Iterate over a copy of keys to avoid issues if CURRENT_PRICES is being updated
             for (const key in LOCAL_AVG_PRICES) {
                 const item = LOCAL_AVG_PRICES[key];
                 const inputGroup = document.createElement('div');
@@ -690,7 +732,8 @@
                 input.addEventListener('input', (e) => {
                     const newValue = parseFloat(e.target.value);
                     if (!isNaN(newValue) && newValue >= 0.01) {
-                        CURRENT_PRICES[e.target.dataset.key] = { ...CURRENT_PRICES[e.target.dataset.key], cost: newValue };
+                        // Update CURRENT_PRICES immediately on input
+                        CURRENT_PRICES[e.target.dataset.key].cost = newValue;
                     }
                 });
 
@@ -702,21 +745,23 @@
 
         function openEditor() {
             renderEditorInputs();
-            $priceEditorModal.classList.remove('hidden');
+            if ($priceEditorModal) $priceEditorModal.classList.remove('hidden');
         }
 
         async function saveAndCloseEditor() {
-            await saveCustomPrices(); 
-            $priceEditorModal.classList.add('hidden');
+            // Recalculate purchase plan immediately after saving prices
             calculateOptimalPurchase(); 
+            // Save to Firestore after calculation, using the updated CURRENT_PRICES
+            await saveCustomPrices(); 
+            if ($priceEditorModal) $priceEditorModal.classList.add('hidden');
         }
 
         async function resetPricesToLocalAverage() {
             // Reset local memory to the initial defaults
-            CURRENT_PRICES = { ...LOCAL_AVG_PRICES };
-            // Save this reset state to the database
+            CURRENT_PRICES = JSON.parse(JSON.stringify(LOCAL_AVG_PRICES)); // Deep clone
+            // Save this reset state to the database (which will trigger a listener update)
             await saveCustomPrices();
-            // Rerender editor and recalculate
+            // Rerender editor and recalculate (listeners will handle this, but force for immediate feedback)
             renderEditorInputs(); 
             calculateOptimalPurchase(); 
         }
@@ -727,13 +772,13 @@
             $$('.tab-button').forEach(button => button.classList.remove('active'));
 
             if (targetTab === 'calculator') {
-                $calculatorContent.classList.remove('hidden');
-                $('[data-tab="calculator"]').classList.add('active');
-                $priceTickerContainer.classList.remove('hidden'); 
+                if ($calculatorContent) $calculatorContent.classList.remove('hidden');
+                if ($('[data-tab="calculator"]')) $('[data-tab="calculator"]').classList.add('active');
+                if ($priceTickerContainer) $priceTickerContainer.classList.remove('hidden'); 
             } else if (targetTab === 'localHub') {
-                $localHubContent.classList.remove('hidden');
-                $('[data-tab="localHub"]').classList.add('active');
-                $priceTickerContainer.classList.add('hidden'); 
+                if ($localHubContent) $localHubContent.classList.remove('hidden');
+                if ($('[data-tab="localHub"]')) $('[data-tab="localHub"]').classList.add('active');
+                if ($priceTickerContainer) $priceTickerContainer.classList.add('hidden'); 
                 // Re-render the hub just in case
                 renderLocalStoreList();
             }
@@ -741,6 +786,8 @@
         
         // --- CORE CALCULATION LOGIC ---
         function calculateOptimalPurchase() {
+            if (!isAgeConfirmed || !$moneyAvailable) return; 
+
             const T = EN_STRINGS;
             let availableMoney = parseFloat($moneyAvailable.value) || 0;
             let totalSpent = 0;
@@ -784,14 +831,17 @@
             }
             
             if (requiredItems.tobacco && wrapperPurchaseAttempts.length === 0) {
-                const tubesPrice = CURRENT_PRICES.tubes.cost;
-                const papersPrice = CURRENT_PRICES.papers.cost;
-                const cheapestWrapper = (tubesPrice / CURRENT_PRICES.tubes.quantity) < (papersPrice / CURRENT_PRICES.papers.quantity)
+                const tubesValue = CURRENT_PRICES.tubes.cost / CURRENT_PRICES.tubes.quantity;
+                const papersValue = CURRENT_PRICES.papers.cost / CURRENT_PRICES.papers.quantity;
+                const cheapestWrapper = (tubesValue < papersValue)
                     ? CURRENT_PRICES.tubes 
                     : CURRENT_PRICES.papers;
                 
-                wrapperPurchaseAttempts.push(cheapestWrapper);
-                plan.push(T.planStatus.autoWrapper(cheapestWrapper.name));
+                // Only auto-add if we can afford it and need tobacco
+                if (tempMoney >= cheapestWrapper.cost) {
+                    wrapperPurchaseAttempts.push(cheapestWrapper);
+                    plan.push(T.planStatus.autoWrapper(cheapestWrapper.name));
+                }
             }
 
             for (const item of wrapperPurchaseAttempts) {
@@ -804,7 +854,7 @@
 
                     if (item.id === 'tubes') { wrapperCountFromTubes += item.quantity; primaryWrapperName = T.itemTubes; } 
                     else if (item.id === 'papers') { wrapperCountFromPapers += item.quantity; primaryWrapperName = T.itemPapers; }
-                } else {
+                } else if (requiredItems.tubes || requiredItems.papers) {
                     plan.push(T.planStatus.insufficientFunds(item.name, item.cost.toFixed(2)));
                 }
             }
@@ -917,25 +967,26 @@
 
             const finalRemaining = availableMoney - totalSpent;
 
-            $planDetails.innerHTML = planHtml;
-            $totalSpent.textContent = `$${totalSpent.toFixed(2)}`;
-            $moneyRemaining.textContent = `$${finalRemaining.toFixed(2)}`;
-            $cigsMade.textContent = Math.floor(finalCigsMade).toLocaleString(); 
+            if ($planDetails) $planDetails.innerHTML = planHtml;
+            if ($totalSpent) $totalSpent.textContent = `$${totalSpent.toFixed(2)}`;
+            if ($moneyRemaining) $moneyRemaining.textContent = `$${finalRemaining.toFixed(2)}`;
+            if ($cigsMade) $cigsMade.textContent = Math.floor(finalCigsMade).toLocaleString(); 
 
-            $moneyRemaining.classList.remove('text-primary', 'text-danger', 'text-white');
-            if (finalRemaining >= 0.01) {
-                $moneyRemaining.classList.add('text-primary'); 
-            } else if (finalRemaining > -0.01) {
-                $moneyRemaining.classList.add('text-white');
-            } else {
-                $moneyRemaining.classList.add('text-danger'); 
+            if ($moneyRemaining) {
+                $moneyRemaining.classList.remove('text-primary', 'text-danger', 'text-white');
+                if (finalRemaining >= 0.01) {
+                    $moneyRemaining.classList.add('text-primary'); 
+                } else if (finalRemaining > -0.01) {
+                    $moneyRemaining.classList.add('text-white');
+                } else {
+                    $moneyRemaining.classList.add('text-danger'); 
+                }
             }
         }
 
         // --- EVENT HANDLERS ---
         function toggleItemNeeded(event) {
-            console.log("Item button clicked:", event.currentTarget.dataset.item); // Diagnostic log
-            // Use currentTarget for maximum reliability on touch events
+            if (!isAgeConfirmed) return;
             const button = event.currentTarget; 
             const itemKey = button.dataset.item;
             
@@ -948,30 +999,63 @@
         }
 
         function setupEventListeners() {
-            console.log("Attaching event listeners."); // Diagnostic log
+            // --- Query Elements (Guaranteed safe inside window.onload) ---
+            $mainContent = $('#mainContent');
+            $moneyAvailable = $('#moneyAvailable');
+            $calculateBtn = $('#calculateBtn');
+            $planDetails = $('#planDetails');
+            $totalSpent = $('#totalSpent');
+            $moneyRemaining = $('#moneyRemaining');
+            $cigsMade = $('#cigsMade'); 
+            $priceTicker = $('#priceTicker');
+            $priceTickerContainer = $('#priceTickerContainer');
+            $locationStatus = $('#locationStatus');
+            $tickerLocationTitle = $('#tickerLocationTitle');
+            $tickerDisclaimer = $('#tickerDisclaimer');
+            $editorBtn = $('#editorBtn');
+            $priceEditorModal = $('#priceEditorModal');
+            $saveAndCloseEditorBtn = $('#saveAndCloseEditorBtn');
+            $resetPricesBtn = $('#resetPricesBtn');
+            $editorInputs = $('#editorInputs');
+            $ageVerificationModal = $('#ageVerificationModal');
+            $confirmAgeBtn = $('#confirmAgeBtn');
+            $tabButtons = $$('.tab-button');
+            $calculatorContent = $('#calculatorContent');
+            $localHubContent = $('#localHubContent');
+            $localStoreList = $('#localStoreList');
+            // -----------------------------------------------------------
 
+            // Age confirmation button
+            if ($confirmAgeBtn) {
+                $confirmAgeBtn.addEventListener('click', confirmAge);
+            } else {
+                console.error("Age confirmation button not found!");
+            }
+            
             // Item selection buttons
-            $('#rollerNeeded').addEventListener('click', toggleItemNeeded);
-            $('#tubesNeeded').addEventListener('click', toggleItemNeeded);
-            $('#papersNeeded').addEventListener('click', toggleItemNeeded); 
-            $('#tobaccoNeeded').addEventListener('click', toggleItemNeeded);
+            if ($('#rollerNeeded')) $('#rollerNeeded').addEventListener('click', toggleItemNeeded);
+            if ($('#tubesNeeded')) $('#tubesNeeded').addEventListener('click', toggleItemNeeded);
+            if ($('#papersNeeded')) $('#papersNeeded').addEventListener('click', toggleItemNeeded); 
+            if ($('#tobaccoNeeded')) $('#tobaccoNeeded').addEventListener('click', toggleItemNeeded);
             
             // Calculator events
-            $calculateBtn.addEventListener('click', calculateOptimalPurchase);
+            if ($calculateBtn) $calculateBtn.addEventListener('click', calculateOptimalPurchase);
             
             // Calculate on Enter key press AND remove focus to dismiss keyboard
-            $moneyAvailable.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter') {
-                    event.preventDefault(); // Prevent default form submission behavior
-                    calculateOptimalPurchase();
-                    event.target.blur(); // <-- Force keyboard to back off/dismiss
-                }
-            });
+            if ($moneyAvailable) {
+                $moneyAvailable.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault(); 
+                        calculateOptimalPurchase();
+                        event.target.blur(); 
+                    }
+                });
+            }
             
             // Editor events
-            $editorBtn.addEventListener('click', openEditor);
-            $saveAndCloseEditorBtn.addEventListener('click', saveAndCloseEditor);
-            $resetPricesBtn.addEventListener('click', resetPricesToLocalAverage);
+            if ($editorBtn) $editorBtn.addEventListener('click', openEditor);
+            if ($saveAndCloseEditorBtn) $saveAndCloseEditorBtn.addEventListener('click', saveAndCloseEditor);
+            if ($resetPricesBtn) $resetPricesBtn.addEventListener('click', resetPricesToLocalAverage);
             
             // Tab events
             $$('.tab-button').forEach(button => {
@@ -986,7 +1070,6 @@
                 if (button) button.classList.toggle('selected', requiredItems[key]);
             });
             switchTab('calculator'); 
-            calculateOptimalPurchase(); 
         }
 
         // --- INITIALIZATION (ASYNC OPERATIONS ONLY) ---
@@ -1000,12 +1083,15 @@
             // 3. Initial renders (dependent on loaded data/location)
             updateTickerTitle();
             renderPriceTicker();
+            // calculateOptimalPurchase is now called by the Firebase listener, 
+            // but we call it once here in case Firebase is slow/unavailable.
+            calculateOptimalPurchase(); 
         }
 
-        // We attach listeners immediately on load, then start async data loading
+        // Attach listeners and query DOM elements only after the window has loaded.
         window.onload = () => {
             setupEventListeners(); 
-            initializeAppAsync();
+            // The main app initialization is blocked until confirmAge() is called.
         };
 
     </script>
