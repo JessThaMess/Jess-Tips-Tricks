@@ -44,7 +44,7 @@
             transition: all 0.1s;
         }
         .item-button.selected {
-            background-color: #10b981; 
+            background-color: #10b981; /* Primary Green */
             color: white;
             box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4), 0 2px 4px -2px rgba(16, 185, 129, 0.4);
             border: 2px solid #047857;
@@ -120,15 +120,31 @@
         .modal-overlay {
             z-index: 1000;
         }
+        .store-type {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            font-weight: 600;
+            background-color: #374151;
+            color: #9ca3af;
+        }
     </style>
 </head>
 <body class="font-sans flex items-center justify-center p-4">
     
     <div id="mainContent" class="container w-full bg-card-bg p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700 hidden">
         
-        <header class="text-center mb-4">
-            <h1 class="text-3xl font-extrabold text-primary">SMOKE FINDER</h1>
-            <p class="text-sm text-gray-400 mt-1">Optimal Purchase Planner</p>
+        <header class="mb-4 relative">
+            <div class="text-center">
+                <h1 class="text-3xl font-extrabold text-primary">SMOKE FINDER</h1>
+                <p class="text-sm text-gray-400 mt-1">Optimal Purchase Planner</p>
+            </div>
+            <!-- Guide Button (Non-invasive, top right) -->
+            <button id="guideBtn" class="absolute top-0 right-0 p-1 rounded-lg text-gray-400 hover:text-secondary transition duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9.247a3.75 3.75 0 100 5.506 3.75 3.75 0 000-5.506zm3.5-2.247h.001M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
         </header>
         
         <!-- Location Status Box -->
@@ -154,7 +170,7 @@
 
         <!-- Ticker Container -->
         <div id="priceTickerContainer" class="mb-6 bg-gray-800 p-3 rounded-xl border border-gray-700">
-            <h2 class="text-md font-semibold text-white mb-2 border-b border-gray-700 pb-1">Lowest-Priced Packs Nearby</h2>
+            <h2 class="text-md font-semibold text-white mb-2 border-b border-gray-700 pb-1">Lowest-Priced Packs Nearby (Mock Avg.)</h2>
             <div id="priceTicker" class="flex overflow-x-auto space-x-3 pb-2">
                 <p class="text-gray-500 p-3">Loading pack prices...</p>
             </div>
@@ -191,9 +207,9 @@
                 Calculate Best Value
             </button>
 
-            <!-- Backdoor Price Editor Button -->
+            <!-- Price Editor Button (Updated) -->
             <button id="editorBtn" class="w-full p-3 bg-gray-600 text-gray-200 font-bold rounded-xl hover:bg-gray-500 transition duration-150 mb-8">
-                Backdoor Price Editor
+                Price Editing Tool (Input Your Store Prices)
             </button>
 
             <!-- Optimal Purchase Plan Output -->
@@ -221,6 +237,13 @@
             <h2 class="text-xl font-extrabold text-secondary mb-4 border-b border-gray-700 pb-2">Local Smoke Hub (Shops & Directions)</h2>
             <p class="text-sm text-gray-400 mb-4">Click the star to favorite a location. Click the store name or address for directions.</p>
             
+            <!-- Disclaimer -->
+            <div class="bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4">
+                <p id="localHubDisclaimer" class="text-xs text-gray-400">
+                    <span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice.
+                </p>
+            </div>
+
             <!-- Local Store List -->
             <div id="localStoreList" class="space-y-3">
                 <p class="text-center text-gray-500 pt-8">Loading shops...</p>
@@ -228,10 +251,10 @@
         </div>
 
 
-        <!-- Price Editor Modal (Simplified to In-Memory Editing) -->
+        <!-- Price Editor Modal -->
         <div id="priceEditorModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div class="bg-editor-bg p-6 rounded-xl w-full max-w-sm border border-gray-600 shadow-2xl max-h-[90vh] overflow-y-auto">
-                <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Backdoor Price Editor</h3>
+                <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Price Editing Tool</h3>
                 <p class="text-gray-400 mb-4 text-sm">Customize the prices of RYO items. Changes are saved and synced to your account.</p>
 
                 <div id="editorInputs" class="space-y-4 mb-6">
@@ -246,10 +269,58 @@
                 </button>
             </div>
         </div>
+
+        <!-- Walkthrough Guide Modal -->
+        <div id="walkthroughModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div class="bg-editor-bg p-6 rounded-xl w-full max-w-lg border border-gray-600 shadow-2xl max-h-[95vh] overflow-y-auto">
+                <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2 flex justify-between items-center">
+                    App Walkthrough Guide
+                    <button id="closeWalkthroughBtn" class="text-gray-400 hover:text-white p-1 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </h3>
+
+                <div class="text-gray-300 space-y-4 text-sm">
+                    <p>Welcome to the Optimal Purchase Planner! This app helps you get the most value for your budget by calculating the best RYO (Roll-Your-Own) purchases based on current market averages or your custom prices.</p>
+
+                    <h4 class="text-lg font-bold text-secondary mt-4">1. The Calculator Tab</h4>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>**Money Available:** Enter the exact dollar amount you plan to spend. Calculation runs automatically when you finish typing.</li>
+                        <li>**What Do You Need?** Select which items you are missing. The app will only calculate purchases for the items you mark as **required** (green background).</li>
+                        <li>**Calculate Best Value:** The planner determines the most efficient way to spend your budget on the required items, prioritizing the cheapest RYO unit cost (tobacco) and ensuring you have wrappers.</li>
+                        <li>**Output:** The results show the breakdown of purchases, the **Total Spent**, **Money Remaining**, and the estimated **Total Cigarettes** you can make based on the purchase limits (whichever is lower: tobacco or wrappers).</li>
+                    </ul>
+
+                    <h4 class="text-lg font-bold text-secondary mt-4">2. Price Editing Tool (Customization)</h4>
+                    <p>Prices change! Use this tool to enter the **actual current prices** you pay for each item at your local shop.</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>**Saving:** Your custom prices are automatically saved and synced to your secure account via Firebase/Firestore. They will persist even if you close and reopen the app.</li>
+                        <li>**Reset:** The `Reset Prices to Local Average` button clears your custom data and restores the default prices.</li>
+                    </ul>
+                    
+                    <h4 class="text-lg font-bold text-secondary mt-4">3. Local Smoke Hub Tab</h4>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>**Price Ticker:** This section (visible in the Calculator tab) displays mock prices for popular pre-rolled cigarette packs nearby, based on a local average. Click any pack for directions to the mock address.</li>
+                        <li>**Shops & Directions:** This list provides mock names and addresses for local shops.</li>
+                        <li>**Favoriting:** Click the **star icon** next to a shop to save it to your favorites. Favorites are sorted to the top and are saved securely to your account.</li>
+                        <li>**Directions:** Click the shop name or address to open a Google Maps search link to the mock location.</li>
+                    </ul>
+                </div>
+
+                <button id="closeWalkthroughBottomBtn" class="w-full mt-6 p-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-500">
+                    Got It! Close Guide
+                </button>
+            </div>
+        </div>
         
-        <!-- Footer for Creator Credit -->
+        <!-- Footer for Creator Credit & Beta Disclaimer -->
         <footer class="text-center mt-6 pt-4 border-t border-gray-700">
-            <p class="text-xs text-gray-500">Created by: <span class="font-semibold text-purple-400">Jess-Hobo-LLC</span></p>
+            <p class="text-xs text-gray-500">
+                Created by: <span class="font-semibold text-purple-400">Jess-Hobo-LLC</span>
+            </p>
+            <p id="betaDisclaimer" class="text-xs text-gray-600 mt-1 italic">
+                (Psst. This is a beta project. Updates are random, and we're just tooling around.)
+            </p>
         </footer>
     </div>
     
@@ -280,14 +351,16 @@
             roller: { name: "Roller (Basic)", cost: 8.70, type: 'tool', needed: false, id: 'roller' },
             tubes: { name: "Tubes (250 ct Box)", cost: 3.80, quantity: 250, type: 'wrapper', needed: false, id: 'tubes' },
             papers: { name: "Papers (100 ct Pack)", cost: 1.63, quantity: 100, type: 'wrapper', needed: false, id: 'papers' },
-            tobacco_bulk: { name: "Tobacco (16 oz Bulk Bag)", cost: 25.00, weight: 16, type: 'tobacco', cigs: 16 * CIGS_PER_OZ, id: 'tobacco_bulk' },
+            // Tobacco bulk item yield (16 oz * 40 cigs/oz = 640 cigs/lb). Using 440 for 16oz based on context.
+            tobacco_bulk: { name: "Tobacco (16 oz Bulk Bag)", cost: 25.00, weight: 16, type: 'tobacco', cigs: 440, id: 'tobacco_bulk' },
             tobacco_mid: { name: "Tobacco (1.0 oz Mid Range)", cost: 3.80, weight: 1.0, type: 'tobacco', cigs: 1 * CIGS_PER_OZ, id: 'tobacco_mid' },
             tobacco_budget: { name: "Tobacco (0.5 oz Budget)", cost: 1.63, weight: 0.5, type: 'tobacco', cigs: 0.5 * CIGS_PER_OZ, id: 'tobacco_budget' },
         };
         const EN_STRINGS = {
-            locationFinding: "Finding location...",
-            locationFallback: "Fallback: ",
-            mockDataDisclaimer: "Using mock data (prices/locations are averages).",
+            locationFinding: "Locating device...",
+            locationSuccess: "Using Device Location",
+            locationDenied: "Location Access Denied / Fallback",
+            mockDataDisclaimer: "Note: Shop/Price data shown are **mock averages**, not real-time quotes.",
             loadingPrices: "Loading pack prices...",
             loadingShops: "Loading shops...",
             itemRoller: "Roller",
@@ -296,7 +369,7 @@
             itemTobacco: "Tobacco",
             initialPrompt: "Enter your budget and select items to calculate the plan.",
             planStatus: {
-                insufficientFunds: (item, cost) => `**INSUFFICIENT FUNDS** for ${item} (Needed 1, Cost $${cost})`,
+                insufficientFunds: (item, cost) => `**INSUFFICIENT FUNDS** for ${item} (Needed, Cost $${cost})`,
                 wrapperWarning: "Papers selected, but no Roller purchased due to low budget.",
                 autoWrapper: (item) => `**Auto-Added Wrapper:** Best value wrapper selected: ${item}.`,
                 tobaccoPurchases: "Tobacco Purchases (Best Value First):",
@@ -311,21 +384,22 @@
             }
         };
 
-        // Mock Cigarette price data (for the Ticker)
+        // Mock Cigarette price data (for the Ticker) - Enhanced Detail
         const LOCAL_CIGARETTES = [
             { brand: "305's Blue 100's", price: 5.19, location: "Discount Tobacco Outlet A", fullAddress: "5400 S State St, Murray, UT 84107" },
             { brand: "Marlboro Special Select", price: 7.29, location: "Local Gas Station 1", fullAddress: "1300 E 4500 S, Salt Lake City, UT 84117" },
             { brand: "Pall Mall (BM)", price: 7.25, location: "Convenience Store A", fullAddress: "4700 S 700 E, Salt Lake City, UT 84107" },
-            { brand: "Basic (B)", price: 7.50, location: "Grocery Store B", fullAddress: "900 E 5600 S, Murray, UT 84107" },
-            { brand: "L&M (LM)", price: 8.10, location: "Corner Deli", fullAddress: "5900 S 700 W, Murray, UT 84107" },
+            { brand: "Basic (B) Full Flavor", price: 7.50, location: "Grocery Store B", fullAddress: "900 E 5600 S, Murray, UT 84107" },
+            { brand: "L&M (LM) Kings", price: 8.10, location: "Corner Deli", fullAddress: "5900 S 700 W, Murray, UT 84107" },
         ];
 
-        // Mock Tobacco Shop Data (for Local Smoke Hub)
+        // Mock Tobacco Shop Data (for Local Smoke Hub) - Enhanced Detail
         const LOCAL_TOBACCO_SHOPS = [
-            { id: 1, name: "Smoke Stop & Vape", address: "45 E Murray Blvd, Murray, UT 84107", hours: "Mon-Sat: 10 AM - 9 PM, Sun: 11 AM - 6 PM", phone: "(801) 555-0101" },
-            { id: 2, name: "Murray Tobacco & Gifts", address: "5500 S 900 E, Murray, UT 84107", hours: "Mon-Fri: 9 AM - 8 PM, Sat: 10 AM - 7 PM, Sun: Closed", phone: "(801) 555-0102" },
-            { id: 3, name: "The Vape/Smoke Depot", address: "4900 S State St, Murray, UT 84107", hours: "Open 24 Hours (Check Holiday Schedule)", phone: "(801) 555-0103" },
-            { id: 4, name: "Puff N Stuff Smoke Shop", address: "4933 S 300 W, Murray, UT 84107", hours: "Mon-Sun: 10 AM - 10 PM", phone: "(801) 555-0104" }
+            { id: 1, name: "Smoke Stop & Vape", type: "Smoke Shop", address: "45 E Murray Blvd, Murray, UT 84107", hours: "Mon-Sat: 10 AM - 9 PM, Sun: 11 AM - 6 PM", phone: "(801) 555-0101" },
+            { id: 2, name: "Murray Tobacco & Gifts", type: "Discount Outlet", address: "5500 S 900 E, Murray, UT 84107", hours: "Mon-Fri: 9 AM - 8 PM, Sat: 10 AM - 7 PM, Sun: Closed", phone: "(801) 555-0102" },
+            { id: 3, name: "Chevron Food Mart", type: "Gas Station/C-Store", address: "4900 S State St, Murray, UT 84107", hours: "Open 24 Hours (Check Holiday Schedule)", phone: "(801) 555-0103" },
+            { id: 4, name: "Puff N Stuff Smoke Shop", type: "Smoke Shop", address: "4933 S 300 W, Murray, UT 84107", hours: "Mon-Sun: 10 AM - 10 PM", phone: "(801) 555-0104" },
+            { id: 5, name: "Kwik Stop Deli", type: "Convenience Store", address: "1250 E 5600 S, Murray, UT 84107", hours: "Mon-Sun: 6 AM - 11 PM", phone: "(801) 555-0105" }
         ];
 
         // --- GLOBALS AND UI ELEMENTS ---
@@ -339,12 +413,11 @@
         let isAuthReady = false;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // Geolocation Globals (Fallback to Murray, UT)
+        // Geolocation Globals
         let userLocation = {
-            latitude: 40.6480, 
-            longitude: -111.8887,
-            city: "Murray", 
-            state: "UT",
+            latitude: null, 
+            longitude: null,
+            status: EN_STRINGS.locationFinding,
             isAccurate: false 
         };
         
@@ -357,6 +430,7 @@
         let $editorBtn, $priceEditorModal, $saveAndCloseEditorBtn, $resetPricesBtn, $editorInputs;
         let $ageVerificationModal, $confirmAgeBtn; 
         let $tabButtons, $calculatorContent, $localHubContent, $localStoreList;
+        let $guideBtn, $walkthroughModal, $closeWalkthroughBtn, $closeWalkthroughBottomBtn, $localHubDisclaimer;
 
 
         let requiredItems = {
@@ -382,6 +456,7 @@
                 
                 if (Object.keys(firebaseConfig).length === 0) {
                     console.error("Firebase config is missing. Data persistence will be local only.");
+                    isAuthReady = true;
                     return;
                 }
                 
@@ -401,14 +476,12 @@
                     if (user) {
                         userId = user.uid;
                         isAuthReady = true;
-                        // console.log("Firebase Auth Ready. User ID:", userId);
                         setupFavoritesListener(); 
                         setupPricesListener(); 
                     } else {
                         // Use a random ID if anonymous sign-in failed, though this shouldn't happen
                         userId = crypto.randomUUID(); 
                         isAuthReady = true;
-                        // console.log("Firebase Auth Ready, No Auth User. Using Random ID.");
                     }
                 });
 
@@ -430,7 +503,6 @@
         function setupFavoritesListener() {
             const docRef = getFavoritesDocRef();
             if (!docRef) {
-                // If docRef is null, Firebase is not ready, rely on local state/mock data
                 renderLocalStoreList(); 
                 return;
             }
@@ -444,7 +516,6 @@
                 renderLocalStoreList();
             }, (error) => {
                 console.error("Error listening to favorites:", error);
-                // Continue with local state on error
             });
         }
 
@@ -483,7 +554,6 @@
         function setupPricesListener() {
             const docRef = getPricesDocRef();
             if (!docRef) {
-                // If docRef is null, Firebase is not ready, rely on CURRENT_PRICES default
                 calculateOptimalPurchase();
                 if ($priceEditorModal && !$priceEditorModal.classList.contains('hidden')) {
                     renderEditorInputs();
@@ -495,18 +565,19 @@
                 if (docSnap.exists() && docSnap.data().prices) {
                     try {
                         const loadedPrices = JSON.parse(docSnap.data().prices);
-                        for(const key in loadedPrices) {
-                            if (CURRENT_PRICES[key]) {
-                                // Only update the cost field from stored data
-                                CURRENT_PRICES[key] = { ...CURRENT_PRICES[key], cost: loadedPrices[key].cost };
+                        // Deep update CURRENT_PRICES from stored data
+                        for(const key in LOCAL_AVG_PRICES) {
+                            if (loadedPrices[key] && loadedPrices[key].cost !== undefined) {
+                                CURRENT_PRICES[key] = { ...LOCAL_AVG_PRICES[key], cost: parseFloat(loadedPrices[key].cost) };
+                            } else {
+                                CURRENT_PRICES[key] = { ...LOCAL_AVG_PRICES[key] };
                             }
                         }
                     } catch (e) {
                         console.error("Error parsing custom prices from Firestore:", e);
                     }
                 } else {
-                    // console.log("No custom prices found. Using defaults.");
-                    CURRENT_PRICES = { ...LOCAL_AVG_PRICES };
+                    CURRENT_PRICES = JSON.parse(JSON.stringify(LOCAL_AVG_PRICES)); // Deep clone defaults
                 }
                 // Recalculate and re-render the editor to reflect loaded prices
                 calculateOptimalPurchase();
@@ -527,13 +598,10 @@
             if (!docRef) return;
 
             try {
-                // Prepare minimal data for storage (only cost needs saving)
                 const priceData = {};
                 for(const key in CURRENT_PRICES) {
-                    // Ensure cost is stored as a number for consistency
                     priceData[key] = { cost: parseFloat(CURRENT_PRICES[key].cost) };
                 }
-                // Store as a JSON string for reliability in Firestore
                 await setDoc(docRef, { prices: JSON.stringify(priceData) }, { merge: true });
             } catch (e) {
                 console.error("Error saving custom prices: ", e);
@@ -545,7 +613,8 @@
         function getGeolocation() {
             return new Promise(resolve => {
                 if (!navigator.geolocation) {
-                    if ($tickerLocationTitle) $tickerLocationTitle.innerHTML = `<span class="text-danger">GPS Unavailable</span>`;
+                    userLocation.status = EN_STRINGS.locationDenied;
+                    userLocation.isAccurate = false;
                     resolve();
                     return;
                 }
@@ -554,23 +623,14 @@
                     userLocation.latitude = position.coords.latitude;
                     userLocation.longitude = position.coords.longitude;
                     userLocation.isAccurate = true;
-
-                    // Simple check to determine if location is significantly different from fallback
-                    const distanceLat = Math.abs(userLocation.latitude - 40.6480);
-                    const distanceLon = Math.abs(userLocation.longitude - -111.8887);
-
-                    if (distanceLat > 0.1 || distanceLon > 0.1) {
-                        userLocation.city = "Your Local Area";
-                        userLocation.state = "";
-                    } else {
-                         userLocation.city = "Murray";
-                         userLocation.state = "UT";
-                    }
+                    userLocation.status = EN_STRINGS.locationSuccess;
                     resolve();
                 };
 
                 const error = (err) => {
                     console.error("Geolocation error:", err.code, err.message);
+                    userLocation.isAccurate = false;
+                    userLocation.status = EN_STRINGS.locationDenied;
                     resolve();
                 };
 
@@ -585,26 +645,33 @@
         // --- UI RENDERERS ---
 
         function updateTickerTitle() {
-            if (!$tickerLocationTitle || !$tickerDisclaimer) return;
+            if (!$tickerLocationTitle || !$tickerDisclaimer || !$localHubDisclaimer) return;
             
-            let locationText = EN_STRINGS.locationFinding;
+            let locationText = userLocation.status;
             
             if (userLocation.isAccurate) {
-                locationText = `${userLocation.city}${userLocation.state ? ', ' + userLocation.state : ''}`;
-                $tickerDisclaimer.textContent = ""; 
+                // Location is successful, hide the generic mock data disclaimer below the title
                 $tickerDisclaimer.classList.add('hidden');
+                $tickerLocationTitle.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="#10b981" viewBox="0 0 256 256">
+                        <path d="M128,128a4,4,0,1,1,4-4A4,4,0,0,1,128,128ZM220,96c0,72-92,128-92,128S36,168,36,96a92,92,0,0,1,184,0Z" fill="#10b981"></path>
+                    </svg>
+                    <span class="text-primary">${locationText}</span>
+                `;
+                // Update the detailed disclaimer text
+                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> The **map links** now use your device's location. The Shop/Price data shown are **mock averages**, not real-time quotes, and are subject to change.`;
             } else {
-                locationText = EN_STRINGS.locationFallback + `${userLocation.city}, ${userLocation.state}`;
-                $tickerDisclaimer.textContent = EN_STRINGS.mockDataDisclaimer;
+                // Location failed or was denied, show the fallback message and the original disclaimer
                 $tickerDisclaimer.classList.remove('hidden');
+                $tickerLocationTitle.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="#f97316" viewBox="0 0 256 256">
+                        <path d="M128,128a4,4,0,1,1,4-4A4,4,0,0,1,128,128ZM220,96c0,72-92,128-92,128S36,168,36,96a92,92,0,0,1,184,0Z" fill="#f97316"></path>
+                    </svg>
+                    <span class="text-secondary">${locationText}</span>
+                `;
+                 // Reset detailed disclaimer
+                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice.`;
             }
-            
-            $tickerLocationTitle.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="#f97316" viewBox="0 0 256 256">
-                    <path d="M128,128a4,4,0,1,1,4-4A4,4,0,0,1,128,128ZM220,96c0,72-92,128-92,128S36,168,36,96a92,92,0,0,1,184,0Z" fill="#f97316"></path>
-                </svg>
-                <span>${locationText}</span>
-            `;
         }
 
         function renderTickerItem(cig) {
@@ -617,7 +684,11 @@
                 <p class="text-xs text-gray-400 mt-1">${cig.location}</p>
             `;
             itemDiv.addEventListener('click', () => {
-                const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cig.fullAddress)}`;
+                // If location is accurate, open maps to the coordinates, otherwise use the mock address
+                const query = userLocation.isAccurate && userLocation.latitude
+                    ? `${userLocation.latitude},${userLocation.longitude}`
+                    : encodeURIComponent(cig.fullAddress);
+                const mapLink = `https://www.google.com/maps/search/?api=1&query=${query}`;
                 window.open(mapLink, '_blank');
             });
             return itemDiv;
@@ -663,8 +734,16 @@
                 
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'flex-grow';
-                contentDiv.innerHTML = `
-                    <p class="font-bold text-white text-lg mb-1">${shop.name}</p>
+                
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'flex items-center mb-1';
+                headerDiv.innerHTML = `
+                    <p class="font-bold text-white text-lg mr-3">${shop.name}</p>
+                    <span class="store-type">${shop.type}</span>
+                `;
+                contentDiv.appendChild(headerDiv);
+
+                contentDiv.innerHTML += `
                     <p class="text-sm text-gray-400">${shop.address}</p>
                     <div class="flex flex-col text-xs text-gray-400 mt-2 space-y-1">
                         <span class="flex items-center">
@@ -695,7 +774,11 @@
                 });
 
                 item.addEventListener('click', () => {
-                    const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`;
+                    // Use actual coordinates if available, otherwise use the mock address
+                    const query = userLocation.isAccurate && userLocation.latitude
+                        ? `${userLocation.latitude},${userLocation.longitude}`
+                        : encodeURIComponent(shop.address);
+                    const mapLink = `https://www.google.com/maps/search/?api=1&query=${query}`;
                     window.open(mapLink, '_blank');
                 });
 
@@ -710,7 +793,7 @@
         function renderEditorInputs() {
             if (!$editorInputs) return;
             $editorInputs.innerHTML = '';
-            // Iterate over a copy of keys to avoid issues if CURRENT_PRICES is being updated
+            // Iterate over the keys of the default structure (LOCAL_AVG_PRICES) to ensure order/labels
             for (const key in LOCAL_AVG_PRICES) {
                 const item = LOCAL_AVG_PRICES[key];
                 const inputGroup = document.createElement('div');
@@ -718,13 +801,13 @@
                 
                 const label = document.createElement('label');
                 label.className = 'text-gray-300 text-sm font-medium';
-                label.textContent = LOCAL_AVG_PRICES[key].name; 
+                label.textContent = item.name; 
 
                 const input = document.createElement('input');
                 input.type = 'number';
                 input.min = '0.01';
                 input.step = '0.01';
-                // Use CURRENT_PRICES for the displayed value
+                // Use CURRENT_PRICES for the displayed value (which holds the user's custom price)
                 input.value = CURRENT_PRICES[key].cost.toFixed(2); 
                 input.dataset.key = key;
                 input.className = 'w-1/3 p-2 bg-gray-600 border border-gray-500 rounded-lg text-white text-right';
@@ -749,19 +832,17 @@
         }
 
         async function saveAndCloseEditor() {
-            // Recalculate purchase plan immediately after saving prices
-            calculateOptimalPurchase(); 
-            // Save to Firestore after calculation, using the updated CURRENT_PRICES
+            // Save to Firestore, which will trigger the listener, which calls calculateOptimalPurchase()
             await saveCustomPrices(); 
             if ($priceEditorModal) $priceEditorModal.classList.add('hidden');
         }
 
         async function resetPricesToLocalAverage() {
-            // Reset local memory to the initial defaults
-            CURRENT_PRICES = JSON.parse(JSON.stringify(LOCAL_AVG_PRICES)); // Deep clone
-            // Save this reset state to the database (which will trigger a listener update)
+            // Reset local memory to the initial defaults (deep clone is crucial here)
+            CURRENT_PRICES = JSON.parse(JSON.stringify(LOCAL_AVG_PRICES)); 
+            // Save this reset state to the database
             await saveCustomPrices();
-            // Rerender editor and recalculate (listeners will handle this, but force for immediate feedback)
+            // Recalculate and re-render the editor (listener handles this, but forcing here for quick UX)
             renderEditorInputs(); 
             calculateOptimalPurchase(); 
         }
@@ -830,6 +911,7 @@
                 wrapperPurchaseAttempts.push(CURRENT_PRICES.papers);
             }
             
+            // Auto-add wrapper if only tobacco is required but no wrapper was selected
             if (requiredItems.tobacco && wrapperPurchaseAttempts.length === 0) {
                 const tubesValue = CURRENT_PRICES.tubes.cost / CURRENT_PRICES.tubes.quantity;
                 const papersValue = CURRENT_PRICES.papers.cost / CURRENT_PRICES.papers.quantity;
@@ -837,35 +919,50 @@
                     ? CURRENT_PRICES.tubes 
                     : CURRENT_PRICES.papers;
                 
-                // Only auto-add if we can afford it and need tobacco
+                // Only auto-add if we can afford at least one unit
                 if (tempMoney >= cheapestWrapper.cost) {
                     wrapperPurchaseAttempts.push(cheapestWrapper);
                     plan.push(T.planStatus.autoWrapper(cheapestWrapper.name));
                 }
             }
 
+            // Loop through potential wrapper purchases
             for (const item of wrapperPurchaseAttempts) {
-                const itemName = getItemName(item.id);
-                if (tempMoney >= item.cost) {
-                    tempMoney -= item.cost;
-                    totalSpent += item.cost;
-                    inventory.wrappers += item.quantity; 
-                    plan.push(`- ${item.name} (1 unit): **$${item.cost.toFixed(2)}**`);
+                let unitsToBuy = 1; 
+                let itemCostPerUnit = item.cost;
+                let totalCost = itemCostPerUnit;
+                
+                // Core Efficiency Adjustment for Tubes
+                if (item.id === 'tubes' && requiredItems.tobacco) {
+                    const TOBACCO_CAPACITY_CIGS = CURRENT_PRICES.tobacco_bulk.cigs; // 440
+                    const TUBE_BOX_COUNT = Math.ceil(TOBACCO_CAPACITY_CIGS / item.quantity); // 2 boxes needed for bulk tobacco
+                    
+                    const costForBulkTobaccoAndTubes = CURRENT_PRICES.tobacco_bulk.cost + (TUBE_BOX_COUNT * itemCostPerUnit); 
 
-                    if (item.id === 'tubes') { wrapperCountFromTubes += item.quantity; primaryWrapperName = T.itemTubes; } 
-                    else if (item.id === 'papers') { wrapperCountFromPapers += item.quantity; primaryWrapperName = T.itemPapers; }
+                    // If we can afford the bulk tobacco + the necessary tubes, buy all tubes needed now.
+                    if (tempMoney >= costForBulkTobaccoAndTubes) {
+                        unitsToBuy = TUBE_BOX_COUNT; 
+                    } else {
+                        unitsToBuy = 1; // Otherwise, only buy one box to leave budget for smaller tobacco
+                    }
+                    totalCost = unitsToBuy * itemCostPerUnit;
+                }
+                
+                if (tempMoney >= totalCost) {
+                    tempMoney -= totalCost;
+                    totalSpent += totalCost;
+                    
+                    inventory.wrappers += (unitsToBuy * item.quantity); 
+                    
+                    plan.push(`- ${item.name} (**${unitsToBuy} unit${unitsToBuy > 1 ? 's' : ''}**): **$${totalCost.toFixed(2)}**`);
+
+                    if (item.id === 'tubes') { wrapperCountFromTubes += (unitsToBuy * item.quantity); primaryWrapperName = T.itemTubes; } 
+                    else if (item.id === 'papers') { wrapperCountFromPapers += (unitsToBuy * item.quantity); primaryWrapperName = T.itemPapers; }
                 } else if (requiredItems.tubes || requiredItems.papers) {
-                    plan.push(T.planStatus.insufficientFunds(item.name, item.cost.toFixed(2)));
+                    plan.push(T.planStatus.insufficientFunds(`${item.name} (${unitsToBuy} boxes)`, totalCost.toFixed(2)));
                 }
             }
-            
-            if (wrapperCountFromTubes > 0 && wrapperCountFromPapers > 0) {
-                primaryWrapperName = 'Wrappers'; 
-            } else if (wrapperCountFromTubes > 0) {
-                primaryWrapperName = T.itemTubes;
-            } else if (wrapperCountFromPapers > 0) {
-                primaryWrapperName = T.itemPapers;
-            }
+            // -----------------------------------------------------------
 
 
             // 3. Purchase Tobacco based on remaining budget
@@ -873,17 +970,14 @@
             let totalCigsFromTobacco = 0;
 
             if (requiredItems.tobacco) {
+                // Determine tobacco value (cigs / cost) and sort for best value first
                 const availableTobaccoOptions = [
                     CURRENT_PRICES.tobacco_bulk, CURRENT_PRICES.tobacco_mid, CURRENT_PRICES.tobacco_budget
-                ].sort((a, b) => {
-                    const aValue = (a.weight * CIGS_PER_OZ) / a.cost;
-                    const bValue = (b.weight * CIGS_PER_OZ) / b.cost;
-                    return bValue - aValue; 
-                });
+                ].sort((a, b) => (b.cigs / b.cost) - (a.cigs / a.cost));
                 
                 let purchaseList = {};
                 for (const item of availableTobaccoOptions) {
-                    const itemCigs = item.weight * CIGS_PER_OZ; 
+                    const itemCigs = item.cigs; 
                     let numToBuy = 0;
                     while (tempMoney >= item.cost) {
                         numToBuy++;
@@ -919,12 +1013,11 @@
             let finalCigsMade = 0;
 
             if (requiredItems.tobacco) {
+                // Cigs made is the MIN of available tobacco yield and available wrappers
                 finalCigsMade = Math.min(inventory.tobacco_cigs, inventory.wrappers);
                 const wrapperNameUpper = primaryWrapperName.charAt(0).toUpperCase() + primaryWrapperName.slice(1);
                 
-                // Calculate potential cigs based on wrappers for the warning message
                 const wrapsCigs = inventory.wrappers;
-
 
                 if (inventory.tobacco_cigs === 0 || inventory.wrappers === 0) {
                     finalMessage = `<p class="text-sm font-bold text-danger mt-4 border border-danger p-3 rounded-lg bg-red-900/30">
@@ -984,6 +1077,15 @@
             }
         }
 
+        // --- WALKTHROUGH MODAL LOGIC ---
+        function openWalkthrough() {
+            if ($walkthroughModal) $walkthroughModal.classList.remove('hidden');
+        }
+
+        function closeWalkthrough() {
+            if ($walkthroughModal) $walkthroughModal.classList.add('hidden');
+        }
+
         // --- EVENT HANDLERS ---
         function toggleItemNeeded(event) {
             if (!isAgeConfirmed) return;
@@ -1023,14 +1125,21 @@
             $calculatorContent = $('#calculatorContent');
             $localHubContent = $('#localHubContent');
             $localStoreList = $('#localStoreList');
+            $localHubDisclaimer = $('#localHubDisclaimer'); // New element query
+            // New Guide elements
+            $guideBtn = $('#guideBtn');
+            $walkthroughModal = $('#walkthroughModal');
+            $closeWalkthroughBtn = $('#closeWalkthroughBtn');
+            $closeWalkthroughBottomBtn = $('#closeWalkthroughBottomBtn');
             // -----------------------------------------------------------
 
             // Age confirmation button
-            if ($confirmAgeBtn) {
-                $confirmAgeBtn.addEventListener('click', confirmAge);
-            } else {
-                console.error("Age confirmation button not found!");
-            }
+            if ($confirmAgeBtn) $confirmAgeBtn.addEventListener('click', confirmAge);
+            
+            // Guide buttons
+            if ($guideBtn) $guideBtn.addEventListener('click', openWalkthrough);
+            if ($closeWalkthroughBtn) $closeWalkthroughBtn.addEventListener('click', closeWalkthrough);
+            if ($closeWalkthroughBottomBtn) $closeWalkthroughBottomBtn.addEventListener('click', closeWalkthrough);
             
             // Item selection buttons
             if ($('#rollerNeeded')) $('#rollerNeeded').addEventListener('click', toggleItemNeeded);
@@ -1041,8 +1150,9 @@
             // Calculator events
             if ($calculateBtn) $calculateBtn.addEventListener('click', calculateOptimalPurchase);
             
-            // Calculate on Enter key press AND remove focus to dismiss keyboard
+            // Calculate on Enter key press or focus loss (better mobile UX)
             if ($moneyAvailable) {
+                $moneyAvailable.addEventListener('blur', calculateOptimalPurchase);
                 $moneyAvailable.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter') {
                         event.preventDefault(); 
@@ -1054,6 +1164,14 @@
             
             // Editor events
             if ($editorBtn) $editorBtn.addEventListener('click', openEditor);
+            if ($priceEditorModal) {
+                 $priceEditorModal.addEventListener('click', (e) => {
+                    // Close if background is clicked
+                    if (e.target === $priceEditorModal) {
+                        saveAndCloseEditor();
+                    }
+                });
+            }
             if ($saveAndCloseEditorBtn) $saveAndCloseEditorBtn.addEventListener('click', saveAndCloseEditor);
             if ($resetPricesBtn) $resetPricesBtn.addEventListener('click', resetPricesToLocalAverage);
             
@@ -1085,7 +1203,9 @@
             renderPriceTicker();
             // calculateOptimalPurchase is now called by the Firebase listener, 
             // but we call it once here in case Firebase is slow/unavailable.
-            calculateOptimalPurchase(); 
+            if (!db || !userId) {
+                calculateOptimalPurchase(); 
+            }
         }
 
         // Attach listeners and query DOM elements only after the window has loaded.
