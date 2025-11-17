@@ -235,7 +235,16 @@
         <!-- Local Smoke Hub Tab Content -->
         <div id="localHubContent" class="tab-content hidden">
             <h2 class="text-xl font-extrabold text-secondary mb-4 border-b border-gray-700 pb-2">Local Smoke Hub (Shops & Directions)</h2>
-            <p class="text-sm text-gray-400 mb-4">Click the star to favorite a location. Click the store name or address for directions.</p>
+            <p class="text-sm text-gray-400 mb-4">Click the star to favorite a location. Click the shop for directions, or use the button below to search near you.</p>
+            
+            <!-- REAL-TIME Search Button -->
+            <button id="liveSearchBtn" class="w-full p-4 bg-primary text-white text-lg font-bold rounded-xl hover:bg-opacity-90 transition duration-150 mb-4 shadow-lg shadow-primary/30 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.8A2 2 0 0110.586 20.8L6.343 16.657A8 8 0 1117.657 16.657z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Search for Tobacco Stores Near Me
+            </button>
             
             <!-- Disclaimer -->
             <div class="bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4">
@@ -300,10 +309,11 @@
                     
                     <h4 class="text-lg font-bold text-secondary mt-4">3. Local Smoke Hub Tab</h4>
                     <ul class="list-disc pl-5 space-y-2">
-                        <li>**Price Ticker:** This section (visible in the Calculator tab) displays mock prices for popular pre-rolled cigarette packs nearby, based on a local average. Click any pack for directions to the mock address.</li>
-                        <li>**Shops & Directions:** This list provides mock names and addresses for local shops.</li>
+                        <li>**NEW Search Feature:** Use the **"Search for Tobacco Stores Near Me"** button to open a real-time Google Maps search centered on your current location.</li>
+                        <li>**Price Ticker:** This section (visible in the Calculator tab) displays mock prices for popular pre-rolled cigarette packs nearby, based on a local average. **Clicking a pack now searches for that specific brand near your current device location.**</li>
+                        <li>**Shops & Directions:** This list provides mock names and generic, non-specific location descriptions. **No real-world addresses are stored or displayed to protect your privacy.**</li>
                         <li>**Favoriting:** Click the **star icon** next to a shop to save it to your favorites. Favorites are sorted to the top and are saved securely to your account.</li>
-                        <li>**Directions:** Click the shop name or address to open a Google Maps search link to the mock location.</li>
+                        <li>**Directions:** Click the shop name or address to open a Google Maps search link to nearby tobacco stores.</li>
                     </ul>
                 </div>
 
@@ -356,6 +366,7 @@
             tobacco_mid: { name: "Tobacco (1.0 oz Mid Range)", cost: 3.80, weight: 1.0, type: 'tobacco', cigs: 1 * CIGS_PER_OZ, id: 'tobacco_mid' },
             tobacco_budget: { name: "Tobacco (0.5 oz Budget)", cost: 1.63, weight: 0.5, type: 'tobacco', cigs: 0.5 * CIGS_PER_OZ, id: 'tobacco_budget' },
         };
+
         const EN_STRINGS = {
             locationFinding: "Locating device...",
             locationSuccess: "Using Device Location",
@@ -384,22 +395,22 @@
             }
         };
 
-        // Mock Cigarette price data (for the Ticker) - Enhanced Detail
+        // Mock Cigarette price data (for the Ticker) - REMOVED ADDRESSES
         const LOCAL_CIGARETTES = [
-            { brand: "305's Blue 100's", price: 5.19, location: "Discount Tobacco Outlet A", fullAddress: "5400 S State St, Murray, UT 84107" },
-            { brand: "Marlboro Special Select", price: 7.29, location: "Local Gas Station 1", fullAddress: "1300 E 4500 S, Salt Lake City, UT 84117" },
-            { brand: "Pall Mall (BM)", price: 7.25, location: "Convenience Store A", fullAddress: "4700 S 700 E, Salt Lake City, UT 84107" },
-            { brand: "Basic (B) Full Flavor", price: 7.50, location: "Grocery Store B", fullAddress: "900 E 5600 S, Murray, UT 84107" },
-            { brand: "L&M (LM) Kings", price: 8.10, location: "Corner Deli", fullAddress: "5900 S 700 W, Murray, UT 84107" },
+            { brand: "305's Blue 100's", price: 5.19, location: "Tobacco Outlet (Area A)" },
+            { brand: "Marlboro Special Select", price: 7.29, location: "Local Gas Station (Area B)" },
+            { brand: "Pall Mall (BM)", price: 7.25, location: "Convenience Store (Area C)" },
+            { brand: "Basic (B) Full Flavor", price: 7.50, location: "Grocery Store (Area D)" },
+            { brand: "L&M (LM) Kings", price: 8.10, location: "Corner Deli (Area E)" },
         ];
 
-        // Mock Tobacco Shop Data (for Local Smoke Hub) - Enhanced Detail
+        // Mock Tobacco Shop Data (for Local Smoke Hub) - GENERIC ADDRESSES
         const LOCAL_TOBACCO_SHOPS = [
-            { id: 1, name: "Smoke Stop & Vape", type: "Smoke Shop", address: "45 E Murray Blvd, Murray, UT 84107", hours: "Mon-Sat: 10 AM - 9 PM, Sun: 11 AM - 6 PM", phone: "(801) 555-0101" },
-            { id: 2, name: "Murray Tobacco & Gifts", type: "Discount Outlet", address: "5500 S 900 E, Murray, UT 84107", hours: "Mon-Fri: 9 AM - 8 PM, Sat: 10 AM - 7 PM, Sun: Closed", phone: "(801) 555-0102" },
-            { id: 3, name: "Chevron Food Mart", type: "Gas Station/C-Store", address: "4900 S State St, Murray, UT 84107", hours: "Open 24 Hours (Check Holiday Schedule)", phone: "(801) 555-0103" },
-            { id: 4, name: "Puff N Stuff Smoke Shop", type: "Smoke Shop", address: "4933 S 300 W, Murray, UT 84107", hours: "Mon-Sun: 10 AM - 10 PM", phone: "(801) 555-0104" },
-            { id: 5, name: "Kwik Stop Deli", type: "Convenience Store", address: "1250 E 5600 S, Murray, UT 84107", hours: "Mon-Sun: 6 AM - 11 PM", phone: "(801) 555-0105" }
+            { id: 1, name: "Smoke Stop & Vape", type: "Smoke Shop", address: "Generic Location near Downtown", hours: "Mon-Sat: 10 AM - 9 PM, Sun: 11 AM - 6 PM", phone: "(801) 555-0101" },
+            { id: 2, name: "Murray Tobacco & Gifts", type: "Discount Outlet", address: "Industrial Park Area Address", hours: "Mon-Fri: 9 AM - 8 PM, Sat: 10 AM - 7 PM, Sun: Closed", phone: "(801) 555-0102" },
+            { id: 3, name: "Chevron Food Mart", type: "Gas Station/C-Store", address: "Major Street Intersection", hours: "Open 24 Hours (Check Holiday Schedule)", phone: "(801) 555-0103" },
+            { id: 4, name: "Puff N Stuff Smoke Shop", type: "Smoke Shop", address: "Northside Commercial Strip", hours: "Mon-Sun: 10 AM - 10 PM", phone: "(801) 555-0104" },
+            { id: 5, name: "Kwik Stop Deli", type: "Convenience Store", address: "Residential Area Corner", hours: "Mon-Sun: 6 AM - 11 PM", phone: "(801) 555-0105" }
         ];
 
         // --- GLOBALS AND UI ELEMENTS ---
@@ -429,7 +440,7 @@
         let $locationStatus, $tickerLocationTitle, $tickerDisclaimer;
         let $editorBtn, $priceEditorModal, $saveAndCloseEditorBtn, $resetPricesBtn, $editorInputs;
         let $ageVerificationModal, $confirmAgeBtn; 
-        let $tabButtons, $calculatorContent, $localHubContent, $localStoreList;
+        let $tabButtons, $calculatorContent, $localHubContent, $localStoreList, $liveSearchBtn;
         let $guideBtn, $walkthroughModal, $closeWalkthroughBtn, $closeWalkthroughBottomBtn, $localHubDisclaimer;
 
 
@@ -659,7 +670,7 @@
                     <span class="text-primary">${locationText}</span>
                 `;
                 // Update the detailed disclaimer text
-                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> The **map links** now use your device's location. The Shop/Price data shown are **mock averages**, not real-time quotes, and are subject to change.`;
+                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> The **map links** and the **Search Near Me** button now use your device's location. The Shop/Price data shown are **mock averages**, not real-time quotes, and are subject to change. **No real-world addresses are stored or displayed.**`;
             } else {
                 // Location failed or was denied, show the fallback message and the original disclaimer
                 $tickerDisclaimer.classList.remove('hidden');
@@ -670,7 +681,7 @@
                     <span class="text-secondary">${locationText}</span>
                 `;
                  // Reset detailed disclaimer
-                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice.`;
+                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice. **No real-world addresses are stored or displayed.**`;
             }
         }
 
@@ -684,11 +695,18 @@
                 <p class="text-xs text-gray-400 mt-1">${cig.location}</p>
             `;
             itemDiv.addEventListener('click', () => {
-                // If location is accurate, open maps to the coordinates, otherwise use the mock address
-                const query = userLocation.isAccurate && userLocation.latitude
-                    ? `${userLocation.latitude},${userLocation.longitude}`
-                    : encodeURIComponent(cig.fullAddress);
-                const mapLink = `https://www.google.com/maps/search/?api=1&query=${query}`;
+                let mapLink = '';
+                const brandQuery = encodeURIComponent(cig.brand);
+
+                if (userLocation.isAccurate && userLocation.latitude && userLocation.longitude) {
+                    // Location is known: Search for BRAND near user coordinates
+                    const coordinates = `${userLocation.latitude},${userLocation.longitude},15z`;
+                    mapLink = `https://www.google.com/maps/search/${brandQuery}/@${coordinates}`;
+                } else {
+                    // Location unknown: Generic search for BRAND globally
+                    mapLink = `https://www.google.com/maps/search/?api=1&query=${brandQuery}`;
+                }
+                
                 window.open(mapLink, '_blank');
             });
             return itemDiv;
@@ -774,11 +792,17 @@
                 });
 
                 item.addEventListener('click', () => {
-                    // Use actual coordinates if available, otherwise use the mock address
-                    const query = userLocation.isAccurate && userLocation.latitude
-                        ? `${userLocation.latitude},${userLocation.longitude}`
-                        : encodeURIComponent(shop.address);
-                    const mapLink = `https://www.google.com/maps/search/?api=1&query=${query}`;
+                    let mapLink = '';
+                    if (userLocation.isAccurate && userLocation.latitude && userLocation.longitude) {
+                         // Search for tobacco stores near the user's location
+                        const query = 'tobacco store';
+                        const coordinates = `${userLocation.latitude},${userLocation.longitude},15z`;
+                        mapLink = `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${coordinates}`;
+                    } else {
+                        // Fallback: search generally for the shop name
+                        const query = encodeURIComponent(shop.name + " tobacco store");
+                        mapLink = `https://www.google.com/maps/search/?api=1&query=${query}`;
+                    }
                     window.open(mapLink, '_blank');
                 });
 
@@ -1077,6 +1101,21 @@
             }
         }
 
+        // --- NEW REAL-TIME SEARCH FUNCTION ---
+        function searchLocalShops() {
+            const query = 'tobacco store';
+            let mapLink = '';
+
+            if (userLocation.isAccurate && userLocation.latitude && userLocation.longitude) {
+                // Use coordinates to center the search on Google Maps (15z is zoom level)
+                mapLink = `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${userLocation.latitude},${userLocation.longitude},15z`;
+            } else {
+                // Fallback to a general search if coordinates aren't available
+                mapLink = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
+            }
+            window.open(mapLink, '_blank');
+        }
+
         // --- WALKTHROUGH MODAL LOGIC ---
         function openWalkthrough() {
             if ($walkthroughModal) $walkthroughModal.classList.remove('hidden');
@@ -1125,7 +1164,8 @@
             $calculatorContent = $('#calculatorContent');
             $localHubContent = $('#localHubContent');
             $localStoreList = $('#localStoreList');
-            $localHubDisclaimer = $('#localHubDisclaimer'); // New element query
+            $localHubDisclaimer = $('#localHubDisclaimer'); 
+            $liveSearchBtn = $('#liveSearchBtn'); 
             // New Guide elements
             $guideBtn = $('#guideBtn');
             $walkthroughModal = $('#walkthroughModal');
@@ -1182,6 +1222,9 @@
                 });
             });
 
+            // Live Search Button Event
+            if ($liveSearchBtn) $liveSearchBtn.addEventListener('click', searchLocalShops);
+
              // Set initial button styles and calculator state
             ['roller', 'tubes', 'papers', 'tobacco'].forEach(key => {
                 const button = $(`#${key}Needed`);
@@ -1218,3 +1261,4 @@
 </body>
 </html>
 
+ 
