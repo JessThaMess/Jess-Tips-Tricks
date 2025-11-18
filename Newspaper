@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Community Voice Newspaper</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for React -->
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
+
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .whitespace-pre-wrap {
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Import Firebase components (Global imports loaded via script tags)
+        const { initializeApp } = firebase;
+        const { 
+            getAuth, 
+            signInWithCustomToken, 
+            signInAnonymously, 
+            onAuthStateChanged 
+        } = firebase.auth;
+        const { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            onSnapshot, 
+            deleteDoc,
+            query,
+            serverTimestamp 
+        } = firebase.firestore;
+        
+        // Import Lucide Icons
+        const { 
+            BookOpen, Edit, CheckCircle, PlusCircle, Trash2, Globe, Home 
+        } = lucide;
+
+        const { useState, useEffect, useCallback } = React;
+
+        // --- Global Variables (Provided by Canvas Environment) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // The structure for publicly accessible data (All users can read published stories)
+        const PUBLIC_COLLECTION_PATH = `artifacts/${appId}/public/data/published_stories`;
+
+        // The structure for private, staff-only drafts (Only the creator can read/write)
+        const DRAFT_COLLECTION_PATH = (userId) => `artifacts/${appId}/users/${userId}/draft_stories`;
+
+
+        // Helper for Firebase Initialization and Authentication
+        const useFirebase = () => {
+            const [db, setDb] = useState(null);
+            const [auth, setAuth] = useState(null);
+            const [userId, setUserId] = useState(null);
+            const [isStaff, setIsStaff] = useState(false); 
+            const [isReady, setIsReady] = useState(false);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                let unsubscribe = () => {};
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    const firestore = getFirestore(app);
+                    const authentication = getAuth(app);
+                    
+                    setDb(firestore);
+                    setAuth(authentication);
+
+                    const authSetup = async (user) => {
+                        try {
+                            if (!user) {
+                                if (initialAuthToken) {
+                                    // Use provided custom token for sign-in
+                                    await signInWithCustomToken(authentication, initialAuthToken);
+                                } else {
+                                    // Fallback to anonymous sign-in
+                                    await signInAnonymously(authentication);
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Firebase Auth Error:", e);
+                            setError("Failed to sign in. Check console for details.");
+                        }
+                    };
+                    
+                    // Set up Auth State Listener
+                    unsubscribe = onAuthStateChanged(authentication, (user) => {
+                        if (user) {
+                            setUserId(user.uid);
+                            // Simple staff check: assume staff if initial token was provided
+                            setIsStaff(!!initialAuthToken); 
+                            setIsReady(true);
+                        } else {
+                            authSetup();
+                        }
+                    });
+
+                } catch (e) {
+                    console.error("Firebase Initialization Error:", e);
+                    setError("Firebase failed to initialize. Check config.");
+                }
+
+                return () => unsubscribe();
+            }, []);
+
+            return { db, userId, isStaff, isReady, error };
+        };
+
+
+        // --- Main Application Component ---
+        const App = () => {
+            const { db, userId, isStaff, isReady, error } = useFirebase();
+
+            // Navigation and State
+            const [view, setView] = useState('reader'); // 'reader', 'editor', 'detail'
+            const [stories, setStories] = useState([]); // Published stories for the reader view
+            const [drafts, setDrafts] = useState([]); // Drafts for the staff editor view
+            const [currentStory, setCurrentStory] = useState(null); // The story being edited or viewed
+            const [loading, setLoading] = useState(true);
+            const [message, setMessage] = useState('');
+
+            // Load PUBLISHED Stories for the Reader View (Accessible to all)
+            useEffect(() => {
+                if (!db) return;
+
+                const publicRef = collection(db, PUBLIC_COLLECTION_PATH);
+                const unsubscribe = onSnapshot(query(publicRef), (snapshot) => {
+                    const publicStories = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    })).sort((a, b) => (b.publishedAt?.toMillis() || 0) - (a.publishedAt?.toMillis() || 0));
+                    setStories(publicStories);
+                    setLoading(false);
+                }, (err) => {
+                    console.error("Error fetching published stories:", err);
+                    setMessage("Failed to load published stories.");
+                    setLoading(false);
+                });
+
+                return () => unsubscribe();
+            }, [db]);
+
+
+            // Load DRAFT Stories for the Editor View (Staff only, private)
+            useEffect(() => {
+                if (!isStaff || !db || !userId) return;
+
+                const draftRef = collection(db, DRAFT_COLLECTION_PATH(userId));
+                const unsubscribe = onSnapshot(query(draftRef), (snapshot) => {
+                    const userDrafts = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    })).sort((a, b) => (b.updatedAt?.toMillis() || 0) - (a.updatedAt?.toMillis() || 0));
+                    setDrafts(userDrafts);
+                    // Reset view if the current draft was just deleted/removed
+                    if (currentStory && view === 'editor' && !userDrafts.find(d => d.id === currentStory.id)) {
+                         setCurrentStory(null);
+                         setView('editor');
+                    }
+                }, (err) => {
+                    console.error("Error fetching drafts:", err);
+                    setMessage("Failed to load drafts.");
+                });
+
+                return () => unsubscribe();
+            }, [db, userId, isStaff, currentStory, view]);
+
+
+            // --- Editor Actions ---
+
+            const newDraft = () => {
+                setCurrentStory({
+                    id: null,
+                    title: 'New Modular Story',
+                    content: '',
+                    status: 'draft',
+                    authorId: userId,
+                });
+                setView('editor');
+            };
+
+            const loadDraft = (storyId) => {
+                const draft = drafts.find(d => d.id === storyId);
+                if (draft) {
+                    setCurrentStory(draft);
+                    setView('editor');
+                    setMessage(`Editing: ${draft.title}`);
+                }
+            };
+
+            const saveDraft = async () => {
+                if (!db || !userId || !currentStory || !currentStory.title?.trim()) {
+                    setMessage("Error: Cannot save without a title.");
+                    return;
+                }
+                
+                setLoading(true);
+                const storyData = {
+                    ...currentStory,
+                    title: currentStory.title.trim(),
+                    updatedAt: serverTimestamp(),
+                    createdAt: currentStory.createdAt || serverTimestamp(),
+                    authorId: userId,
+                    status: 'draft',
+                };
+
+                const docRef = currentStory.id 
+                    ? doc(db, DRAFT_COLLECTION_PATH(userId), currentStory.id)
+                    : doc(collection(db, DRAFT_COLLECTION_PATH(userId)));
+
+                try {
+                    await setDoc(docRef, storyData);
+                    setCurrentStory(prev => ({ ...prev, id: docRef.id }));
+                    setMessage(`Draft saved successfully!`);
+                } catch (e) {
+                    console.error("Error saving draft:", e);
+                    setMessage("Error saving draft. See console.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const deleteDraft = async () => {
+                if (!currentStory || !currentStory.id) return;
+                
+                // Custom confirmation
+                if (!window.confirm(`Are you sure you want to delete the draft "${currentStory.title}"?`)) return;
+
+                setLoading(true);
+                try {
+                    await deleteDoc(doc(db, DRAFT_COLLECTION_PATH(userId), currentStory.id));
+                    setMessage(`Draft "${currentStory.title}" deleted.`);
+                    newDraft(); // Start a new blank draft
+                } catch (e) {
+                    console.error("Error deleting draft:", e);
+                    setMessage("Error deleting draft.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const publishStory = async () => {
+                if (!currentStory || !currentStory.content || !currentStory.title) {
+                    setMessage("Error: Cannot publish without content and a title.");
+                    return;
+                }
+
+                setLoading(true);
+                // 1. Reference the PUBLIC collection
+                const publicDocRef = doc(collection(db, PUBLIC_COLLECTION_PATH));
+                const publicStoryData = {
+                    title: currentStory.title,
+                    content: currentStory.content,
+                    publishedAt: serverTimestamp(),
+                    status: 'published',
+                    authorId: userId,
+                };
+
+                try {
+                    // Save to the public, readable collection
+                    await setDoc(publicDocRef, publicStoryData);
+                    
+                    // 2. Delete the draft from the private collection to clean up
+                    if (currentStory.id) {
+                        await deleteDoc(doc(db, DRAFT_COLLECTION_PATH(userId), currentStory.id));
+                    }
+
+                    setMessage(`Story "${currentStory.title}" published successfully!`);
+                    setCurrentStory(null);
+                    setView('reader'); // Show the newly published story in the reader view
+                } catch (e) {
+                    console.error("Error publishing story:", e);
+                    setMessage("Error publishing story. See console.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            // --- Reader View Actions ---
+
+            const viewStoryDetail = (story) => {
+                setCurrentStory(story);
+                setView('detail');
+            };
+
+            // --- Renderer Components ---
+
+            const EditorView = () => (
+                <div className="p-4 bg-white rounded-xl shadow-lg">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                        <Edit className="w-6 h-6 mr-2 text-indigo-600" /> 
+                        {currentStory?.title || 'New Draft'}
+                    </h2>
+                    
+                    <input
+                        type="text"
+                        placeholder="Story Title"
+                        value={currentStory?.title || ''}
+                        onChange={(e) => setCurrentStory(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full mb-4 p-3 border border-gray-300 rounded-lg text-xl font-medium focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    
+                    <textarea
+                        placeholder="Paste your FINAL, ASSEMBLED, and ANONYMIZED story content here (Module A + Module B combined)..."
+                        value={currentStory?.content || ''}
+                        onChange={(e) => setCurrentStory(prev => ({ ...prev, content: e.target.value }))}
+                        className="w-full mb-4 p-3 border border-gray-300 rounded-lg min-h-[400px] text-gray-800 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    
+                    <div className="flex flex-wrap gap-3 mt-4">
+                        <button 
+                            onClick={saveDraft} 
+                            className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md disabled:opacity-50"
+                            disabled={loading || !currentStory?.title?.trim()}
+                        >
+                            <CheckCircle className="w-5 h-5 mr-2" /> Save Draft
+                        </button>
+                        <button 
+                            onClick={publishStory} 
+                            className="flex items-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md disabled:opacity-50"
+                            disabled={loading || !currentStory?.content}
+                        >
+                            <Globe className="w-5 h-5 mr-2" /> Publish Story
+                        </button>
+                        {currentStory?.id && (
+                            <button 
+                                onClick={deleteDraft} 
+                                className="flex items-center bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md disabled:opacity-50"
+                                disabled={loading}
+                            >
+                                <Trash2 className="w-5 h-5 mr-2" /> Delete Draft
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+
+            const ReaderView = () => (
+                <div className="p-4">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+                        <BookOpen className="w-7 h-7 mr-3 text-indigo-600" />
+                        Latest Community Voices
+                    </h2>
+                    {stories.length === 0 && !loading ? (
+                        <p className="text-gray-500 italic">No stories published yet.</p>
+                    ) : (
+                        <div className="grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {stories.map(story => (
+                                <div key={story.id} className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition duration-300 border border-gray-100">
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{story.title}</h3>
+                                    <p className="text-sm text-gray-500 mb-3">
+                                        Published: {story.publishedAt?.toDate().toLocaleDateString() || 'N/A'}
+                                    </p>
+                                    <p className="text-gray-600 line-clamp-3">{story.content}</p>
+                                    <button 
+                                        onClick={() => viewStoryDetail(story)}
+                                        className="mt-4 text-indigo-600 hover:text-indigo-800 font-medium flex items-center transition duration-150"
+                                    >
+                                        Read Full Story &rarr;
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+
+            const DetailView = () => (
+                <div className="p-4 bg-white rounded-xl shadow-lg max-w-4xl mx-auto">
+                    <button 
+                        onClick={() => setView('reader')} 
+                        className="text-indigo-600 hover:text-indigo-800 font-medium mb-4 flex items-center"
+                    >
+                        &larr; Back to Stories
+                    </button>
+                    <h2 className="text-3xl font-bold text-gray-800 mb-2">{currentStory?.title}</h2>
+                    <p className="text-sm text-gray-500 mb-6 border-b pb-4">
+                        Published on: {currentStory?.publishedAt?.toDate().toLocaleDateString() || 'N/A'}
+                    </p>
+                    <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                        {currentStory?.content}
+                    </div>
+                </div>
+            );
+
+            const StaffDraftsPanel = () => (
+                <div className="bg-white p-4 rounded-xl shadow-lg border-t-4 border-indigo-600">
+                    <h3 className="text-xl font-bold text-gray-800 mb-3 flex justify-between items-center">
+                        Your Drafts ({drafts.length})
+                        <button 
+                            onClick={newDraft} 
+                            className="flex items-center text-sm bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-3 rounded-full transition duration-150 shadow-md">
+                            <PlusCircle className="w-4 h-4 mr-1" /> New
+                        </button>
+                    </h3>
+                    <div className="max-h-60 overflow-y-auto">
+                        {drafts.length === 0 ? (
+                            <p className="text-gray-500 italic text-sm">No active drafts. Click 'New' to start.</p>
+                        ) : (
+                            <ul className="space-y-2">
+                                {drafts.map(draft => (
+                                    <li key={draft.id} className="flex justify-between items-center p-2 bg-gray-50 hover:bg-gray-100 rounded-lg">
+                                        <span className="text-gray-700 truncate">{draft.title}</span>
+                                        <button 
+                                            onClick={() => loadDraft(draft.id)}
+                                            className="text-indigo-500 hover:text-indigo-700 text-sm font-medium ml-2"
+                                        >
+                                            Edit
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            );
+
+            // --- Main Render ---
+
+            if (error) {
+                return <div className="p-8 text-center bg-red-100 text-red-700 font-bold">Initialization Error: {error}</div>;
+            }
+
+            if (!isReady) {
+                return <div className="p-8 text-center text-indigo-600 font-bold">Loading secured newspaper platform...</div>;
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Navigation Header */}
+                    <div className="sticky top-0 z-10 bg-white shadow-md">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+                            <div className="flex items-center space-x-4">
+                                <h1 className="text-2xl font-extrabold text-indigo-700">The Community Voice</h1>
+                                <nav className="hidden sm:flex space-x-2">
+                                    <button 
+                                        onClick={() => { setView('reader'); setCurrentStory(null); }}
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition duration-150 ${view === 'reader' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                                    >
+                                        <Home className="w-4 h-4 inline mr-1" /> Reader View
+                                    </button>
+                                    {isStaff && (
+                                        <button 
+                                            onClick={() => { setView('editor'); newDraft(); }}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition duration-150 ${['editor', 'drafts'].includes(view) ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                                        >
+                                            <Edit className="w-4 h-4 inline mr-1" /> Staff Editor
+                                        </button>
+                                    )}
+                                </nav>
+                            </div>
+                            <div className="text-xs text-right">
+                                <span className="font-semibold">{isStaff ? 'Staff Account' : 'Reader Account'}</span>
+                                <div className="text-gray-500">ID: {userId.slice(0, 8)}...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {/* Status Message */}
+                        {message && (
+                            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg" role="alert">
+                                <p className="font-bold">Status:</p>
+                                <p>{message}</p>
+                            </div>
+                        )}
+                        
+                        {/* Main Content Area */}
+                        <div className="grid lg:grid-cols-4 gap-6">
+                            {/* Sidebar for Staff */}
+                            {isStaff && (
+                                <div className="lg:col-span-1 space-y-6">
+                                    <StaffDraftsPanel />
+                                    <div className="bg-white p-4 rounded-xl shadow-lg text-sm text-gray-700 border border-gray-100">
+                                        <h4 className="font-bold mb-2">Workflow Note:</h4>
+                                        <p>Use your **Secure Story Assembler** to combine Module A and B, then paste the finalized, anonymous content into the Staff Editor.</p>
+                                        <p className="mt-2 text-indigo-600">Your draft stories are private and safe here.</p>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Main View */}
+                            <div className={isStaff ? "lg:col-span-3" : "lg:col-span-4"}>
+                                {loading && <div className="text-center p-8 text-indigo-600 font-medium">Loading content...</div>}
+                                
+                                {!loading && (
+                                    <>
+                                        {view === 'reader' && <ReaderView />}
+                                        {view === 'detail' && <DetailView />}
+                                        {view === 'editor' && isStaff && <EditorView />}
+                                        {view === 'editor' && !isStaff && <p className="text-red-500 p-8 text-center">Access Denied: Staff Editor is for authorized journalists only.</p>}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        // Render the App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+</body>
+</html>
+
