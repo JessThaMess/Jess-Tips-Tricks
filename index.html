@@ -128,6 +128,14 @@
             background-color: #374151;
             color: #9ca3af;
         }
+        .source-link {
+            display: block;
+            margin-top: 0.5rem;
+            color: #60a5fa; /* Blue link color */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="font-sans flex items-center justify-center p-4">
@@ -139,7 +147,6 @@
                 <h1 class="text-3xl font-extrabold text-primary">SMOKE FINDER</h1>
                 <p class="text-sm text-gray-400 mt-1">Optimal Purchase Planner</p>
             </div>
-            <!-- Guide Button (Non-invasive, top right) -->
             <button id="guideBtn" class="absolute top-0 right-0 p-1 rounded-lg text-gray-400 hover:text-secondary transition duration-150">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9.247a3.75 3.75 0 100 5.506 3.75 3.75 0 000-5.506zm3.5-2.247h.001M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -147,7 +154,6 @@
             </button>
         </header>
         
-        <!-- Location Status Box -->
         <div id="locationStatus" class="text-sm opacity-90">
             <p id="tickerLocationTitle" class="font-semibold text-secondary flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="#f97316" viewBox="0 0 256 256">
@@ -158,7 +164,6 @@
             <p id="tickerDisclaimer" class="text-gray-400 mt-1">Using mock data.</p>
         </div>
 
-        <!-- Tab Navigation -->
         <div class="flex border-b border-gray-700 mb-6">
             <button class="tab-button p-3 flex-1 text-center text-gray-300 hover:text-secondary transition duration-150 active" data-tab="calculator">
                 Calculator
@@ -168,7 +173,6 @@
             </button>
         </div>
 
-        <!-- Ticker Container -->
         <div id="priceTickerContainer" class="mb-6 bg-gray-800 p-3 rounded-xl border border-gray-700">
             <h2 class="text-md font-semibold text-white mb-2 border-b border-gray-700 pb-1">Lowest-Priced Packs Nearby (Mock Avg.)</h2>
             <div id="priceTicker" class="flex overflow-x-auto space-x-3 pb-2">
@@ -176,19 +180,15 @@
             </div>
         </div>
 
-        <!-- Calculator Tab Content -->
         <div id="calculatorContent" class="tab-content">
-            <!-- Money Input -->
             <div class="mb-6">
                 <label for="moneyAvailable" class="block text-sm font-medium text-gray-300 mb-1">Total Money Available ($)</label>
                 <input type="number" id="moneyAvailable" value="30.00" min="0" step="0.01" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-secondary focus:border-secondary transition duration-150 text-white shadow-md text-xl">
             </div>
 
-            <!-- Required Items Selection -->
             <div class="mb-8">
                 <h2 class="text-lg font-semibold text-gray-300 mb-3">What do you need to buy?</h2>
                 
-                <!-- Custom Button Layout for Spacing -->
                 <div class="space-y-3">
                     <div class="flex justify-center space-x-4">
                         <button id="rollerNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="roller">Roller</button>
@@ -202,24 +202,20 @@
                 </div>
             </div>
 
-            <!-- Calculate Button (Tapered) -->
             <button id="calculateBtn" class="w-full tapered-btn bg-primary text-white text-lg font-extrabold hover:bg-opacity-90 transition duration-150 mb-6 shadow-lg shadow-primary/30">
                 Calculate Best Value
             </button>
 
-            <!-- Price Editor Button (Updated) -->
             <button id="editorBtn" class="w-full p-3 bg-gray-600 text-gray-200 font-bold rounded-xl hover:bg-gray-500 transition duration-150 mb-8">
                 Price Editing Tool (Input Your Store Prices)
             </button>
 
-            <!-- Optimal Purchase Plan Output -->
             <div class="bg-gray-800 p-5 rounded-xl optimal-plan border-t-4 border-secondary" id="planOutputContainer">
                 <h2 class="text-xl font-extrabold text-secondary mb-3 border-b border-gray-700 pb-2">Optimal Purchase Plan</h2>
                 <div id="planDetails" class="min-h-[150px] text-gray-300 text-sm">
                     <p class="text-center text-gray-500 pt-8">Enter your budget and select items to calculate the plan.</p>
                 </div>
 
-                <!-- Total Cigs Made Summary -->
                 <div id="cigsSummary" class="mt-4 pt-4 border-t border-gray-700 flex justify-between">
                     <div class="text-lg font-bold">Total Spent: <span id="totalSpent" class="text-primary">$0.00</span></div>
                     <div class="text-lg font-bold">Money Remaining: <span id="moneyRemaining" class="text-primary">$0.00</span></div>
@@ -232,12 +228,10 @@
             </div>
         </div>
 
-        <!-- Local Smoke Hub Tab Content -->
         <div id="localHubContent" class="tab-content hidden">
             <h2 class="text-xl font-extrabold text-secondary mb-4 border-b border-gray-700 pb-2">Local Smoke Hub (Shops & Directions)</h2>
             <p class="text-sm text-gray-400 mb-4">Click the star to favorite a location. Click the shop for directions, or use the button below to search near you.</p>
             
-            <!-- REAL-TIME Search Button -->
             <button id="liveSearchBtn" class="w-full p-4 bg-primary text-white text-lg font-bold rounded-xl hover:bg-opacity-90 transition duration-150 mb-4 shadow-lg shadow-primary/30 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.8A2 2 0 0110.586 20.8L6.343 16.657A8 8 0 1117.657 16.657z" />
@@ -246,29 +240,48 @@
                 Search for Tobacco Stores Near Me
             </button>
             
-            <!-- Disclaimer -->
+            <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 border border-secondary/50">
+                <h3 class="text-xl font-bold text-secondary mb-3 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="#f97316" viewBox="0 0 24 24" stroke="none">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                    Ask Gemini (Price Search)
+                </h3>
+                <p class="text-sm text-gray-400 mb-3">Ask about specific brand prices or availability in your area. **Feature Disabled: Requires a private API Key.**</p>
+                
+                <input type="text" id="aiQueryInput" placeholder="e.g., 'Marlboro Red 100s price in Utah'" class="w-full p-3 mb-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-secondary focus:border-secondary transition duration-150 text-white shadow-md" disabled>
+                
+                <button id="aiSearchBtn" class="w-full p-3 bg-gray-700 text-gray-500 font-bold rounded-lg" disabled>
+                    <span id="aiSearchBtnText">Search Current Prices (Disabled)</span>
+                    <svg id="aiSearchSpinner" class="animate-spin h-5 w-5 text-white ml-2 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </button>
+
+                <div id="aiResultContainer" class="mt-4 pt-3 border-t border-gray-700 hidden">
+                    <p class="font-bold text-gray-300 mb-2">Gemini's Analysis:</p>
+                    <div id="aiResultText" class="text-sm text-gray-300 bg-gray-900 p-3 rounded-lg"></div>
+                    <div id="aiResultSources" class="text-xs mt-3 text-gray-500"></div>
+                </div>
+            </div>
+            
             <div class="bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4">
                 <p id="localHubDisclaimer" class="text-xs text-gray-400">
-                    <span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice.
+                    <span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice. **No real-world addresses are stored or displayed.**
                 </p>
             </div>
 
-            <!-- Local Store List -->
             <div id="localStoreList" class="space-y-3">
                 <p class="text-center text-gray-500 pt-8">Loading shops...</p>
             </div>
         </div>
 
 
-        <!-- Price Editor Modal -->
         <div id="priceEditorModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div class="bg-editor-bg p-6 rounded-xl w-full max-w-sm border border-gray-600 shadow-2xl max-h-[90vh] overflow-y-auto">
                 <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Price Editing Tool</h3>
-                <p class="text-gray-400 mb-4 text-sm">Customize the prices of RYO items. Changes are saved and synced to your account.</p>
+                <p class="text-gray-400 mb-4 text-sm">Customize the prices of RYO items. Changes are saved to your browser's local storage.</p>
 
                 <div id="editorInputs" class="space-y-4 mb-6">
-                    <!-- Inputs populated by JS -->
-                </div>
+                    </div>
 
                 <button id="resetPricesBtn" class="w-full p-3 bg-danger text-white font-bold rounded-lg hover:bg-red-600 transition duration-150 mb-3">
                     Reset Prices to Local Average
@@ -279,7 +292,6 @@
             </div>
         </div>
 
-        <!-- Walkthrough Guide Modal -->
         <div id="walkthroughModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div class="bg-editor-bg p-6 rounded-xl w-full max-w-lg border border-gray-600 shadow-2xl max-h-[95vh] overflow-y-auto">
                 <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2 flex justify-between items-center">
@@ -303,17 +315,18 @@
                     <h4 class="text-lg font-bold text-secondary mt-4">2. Price Editing Tool (Customization)</h4>
                     <p>Prices change! Use this tool to enter the **actual current prices** you pay for each item at your local shop.</p>
                     <ul class="list-disc pl-5 space-y-2">
-                        <li>**Saving:** Your custom prices are automatically saved and synced to your secure account via Firebase/Firestore. They will persist even if you close and reopen the app.</li>
+                        <li>**Saving:** Your custom prices are automatically saved to your **browser's local storage**. They will persist on this device even if you close and reopen the app.</li>
                         <li>**Reset:** The `Reset Prices to Local Average` button clears your custom data and restores the default prices.</li>
                     </ul>
                     
                     <h4 class="text-lg font-bold text-secondary mt-4">3. Local Smoke Hub Tab</h4>
                     <ul class="list-disc pl-5 space-y-2">
-                        <li>**NEW Search Feature:** Use the **"Search for Tobacco Stores Near Me"** button to open a real-time Google Maps search centered on your current location.</li>
+                        <li>**Google Maps Search:** Use the **"Search for Tobacco Stores Near Me"** button to open a real-time Google Maps search centered on your current location.</li>
+                        <li>**Gemini Price Search:** This feature is **disabled** as it requires a private API key for real-time web grounding.</li>
                         <li>**Price Ticker:** This section (visible in the Calculator tab) displays mock prices for popular pre-rolled cigarette packs nearby, based on a local average. **Clicking a pack now searches for that specific brand near your current device location.**</li>
-                        <li>**Shops & Directions:** This list provides mock names and generic, non-specific location descriptions. **No real-world addresses are stored or displayed to protect your privacy.**</li>
-                        <li>**Favoriting:** Click the **star icon** next to a shop to save it to your favorites. Favorites are sorted to the top and are saved securely to your account.</li>
-                        <li>**Directions:** Click the shop name or address to open a Google Maps search link to nearby tobacco stores.</li>
+                        <li>**Shops & Directions:** The list provides generic search links. **No real-world addresses are stored or displayed to protect your privacy.**</li>
+                        <li>**Favoriting:** Click the **star icon** next to a shop to save it to your favorites in local storage.</li>
+                        <li>**Directions:** Click the shop entry to open a Google Maps search link to nearby tobacco stores.</li>
                     </ul>
                 </div>
 
@@ -323,7 +336,6 @@
             </div>
         </div>
         
-        <!-- Footer for Creator Credit & Beta Disclaimer -->
         <footer class="text-center mt-6 pt-4 border-t border-gray-700">
             <p class="text-xs text-gray-500">
                 Created by: <span class="font-semibold text-purple-400">Jess-Hobo-LLC</span>
@@ -334,7 +346,6 @@
         </footer>
     </div>
     
-    <!-- Age Verification Modal (Always on top initially) -->
     <div id="ageVerificationModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4">
         <div class="bg-card-bg p-6 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl text-center">
             <h3 class="text-2xl font-extrabold text-secondary mb-4">Age Verification Required</h3>
@@ -348,15 +359,13 @@
         </div>
     </div>
 
-    <!-- Firebase Imports - MUST be type="module" -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
-        
         // --- CONSTANTS AND DEFAULTS ---
         const CIGS_PER_OZ = 40; 
+        const API_MODEL = "gemini-2.5-flash-preview-09-2025";
+        const API_URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent`;
+        const apiKey = ""; // API key is not required for this local version.
+
         const LOCAL_AVG_PRICES = {
             roller: { name: "Roller (Basic)", cost: 8.70, type: 'tool', needed: false, id: 'roller' },
             tubes: { name: "Tubes (250 ct Box)", cost: 3.80, quantity: 250, type: 'wrapper', needed: false, id: 'tubes' },
@@ -378,887 +387,3 @@
             itemTubes: "Tubes",
             itemPapers: "Papers",
             itemTobacco: "Tobacco",
-            initialPrompt: "Enter your budget and select items to calculate the plan.",
-            planStatus: {
-                insufficientFunds: (item, cost) => `**INSUFFICIENT FUNDS** for ${item} (Needed, Cost $${cost})`,
-                wrapperWarning: "Papers selected, but no Roller purchased due to low budget.",
-                autoWrapper: (item) => `**Auto-Added Wrapper:** Best value wrapper selected: ${item}.`,
-                tobaccoPurchases: "Tobacco Purchases (Best Value First):",
-                tobaccoPurchase: (displayWeight, cost) => ` > ${displayWeight}: **$${cost}**`,
-                noTobaccoFunds: " > **INSUFFICIENT FUNDS** for any tobacco purchase.",
-                budgetFailure: (wrapper) => `**Action Required:** Budget failure. You need both tobacco and ${wrapper}.`,
-                wrapperShortage: (tobaccoCigs, wrappers, wrapperName) => `**${wrapperName} Shortage:** Enough tobacco for ~${tobaccoCigs} cigs, but only ${wrappers} ${wrapperName}.`,
-                tobaccoShortage: (wrappers, tobaccoCigs, wrapperName) => `**Tobacco Shortage:** Enough ${wrapperName} for ${wrappers} cigs, but only tobacco for ~${tobaccoCigs} cigs.`,
-                perfectMatch: (wrapperName) => `**Perfect Match:** Your tobacco and ${wrapperName} are perfectly balanced!`,
-                tobaccoNotNeeded: "Purchases made. Tobacco was not selected as required.",
-                nothingPurchased: "Nothing purchased. Check your budget and selection."
-            }
-        };
-
-        // Mock Cigarette price data (for the Ticker) - REMOVED ADDRESSES
-        const LOCAL_CIGARETTES = [
-            { brand: "305's Blue 100's", price: 5.19, location: "Tobacco Outlet (Area A)" },
-            { brand: "Marlboro Special Select", price: 7.29, location: "Local Gas Station (Area B)" },
-            { brand: "Pall Mall (BM)", price: 7.25, location: "Convenience Store (Area C)" },
-            { brand: "Basic (B) Full Flavor", price: 7.50, location: "Grocery Store (Area D)" },
-            { brand: "L&M (LM) Kings", price: 8.10, location: "Corner Deli (Area E)" },
-        ];
-
-        // Mock Tobacco Shop Data (for Local Smoke Hub) - GENERIC ADDRESSES
-        const LOCAL_TOBACCO_SHOPS = [
-            { id: 1, name: "Smoke Stop & Vape", type: "Smoke Shop", address: "Generic Location near Downtown", hours: "Mon-Sat: 10 AM - 9 PM, Sun: 11 AM - 6 PM", phone: "(801) 555-0101" },
-            { id: 2, name: "Murray Tobacco & Gifts", type: "Discount Outlet", address: "Industrial Park Area Address", hours: "Mon-Fri: 9 AM - 8 PM, Sat: 10 AM - 7 PM, Sun: Closed", phone: "(801) 555-0102" },
-            { id: 3, name: "Chevron Food Mart", type: "Gas Station/C-Store", address: "Major Street Intersection", hours: "Open 24 Hours (Check Holiday Schedule)", phone: "(801) 555-0103" },
-            { id: 4, name: "Puff N Stuff Smoke Shop", type: "Smoke Shop", address: "Northside Commercial Strip", hours: "Mon-Sun: 10 AM - 10 PM", phone: "(801) 555-0104" },
-            { id: 5, name: "Kwik Stop Deli", type: "Convenience Store", address: "Residential Area Corner", hours: "Mon-Sun: 6 AM - 11 PM", phone: "(801) 555-0105" }
-        ];
-
-        // --- GLOBALS AND UI ELEMENTS ---
-        let CURRENT_PRICES = { ...LOCAL_AVG_PRICES };
-        let favorites = new Set(); // Stores favorited store IDs as strings
-        let isAgeConfirmed = false; 
-
-        // Firebase Globals
-        let db, auth;
-        let userId = null;
-        let isAuthReady = false;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        // Geolocation Globals
-        let userLocation = {
-            latitude: null, 
-            longitude: null,
-            status: EN_STRINGS.locationFinding,
-            isAccurate: false 
-        };
-        
-        const $ = selector => document.querySelector(selector);
-        const $$ = selector => document.querySelectorAll(selector);
-
-        // Core App Elements 
-        let $mainContent, $moneyAvailable, $calculateBtn, $planDetails, $totalSpent, $moneyRemaining, $cigsMade, $priceTicker, $priceTickerContainer;
-        let $locationStatus, $tickerLocationTitle, $tickerDisclaimer;
-        let $editorBtn, $priceEditorModal, $saveAndCloseEditorBtn, $resetPricesBtn, $editorInputs;
-        let $ageVerificationModal, $confirmAgeBtn; 
-        let $tabButtons, $calculatorContent, $localHubContent, $localStoreList, $liveSearchBtn;
-        let $guideBtn, $walkthroughModal, $closeWalkthroughBtn, $closeWalkthroughBottomBtn, $localHubDisclaimer;
-
-
-        let requiredItems = {
-            roller: true, tubes: true, papers: true, tobacco: true,
-        };
-
-        // --- AGE VERIFICATION LOGIC ---
-        function confirmAge() {
-            isAgeConfirmed = true;
-            $ageVerificationModal.classList.add('hidden');
-            $mainContent.classList.remove('hidden');
-            // Once age is confirmed, start the rest of the app initialization
-            initializeAppAsync();
-        }
-
-
-        // --- FIREBASE SETUP AND DATA PERSISTENCE ---
-
-        async function firebaseSetup() {
-            try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebase config is missing. Data persistence will be local only.");
-                    isAuthReady = true;
-                    return;
-                }
-                
-                // setLogLevel('Debug'); // Enable for debugging
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // Sign in or use custom token
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        setupFavoritesListener(); 
-                        setupPricesListener(); 
-                    } else {
-                        // Use a random ID if anonymous sign-in failed, though this shouldn't happen
-                        userId = crypto.randomUUID(); 
-                        isAuthReady = true;
-                    }
-                });
-
-            } catch (error) {
-                console.error("Firebase setup error:", error);
-                // Fallback to local data handling if setup fails
-                isAuthReady = true; 
-            }
-        }
-
-        // --- FAVORITES PERSISTENCE ---
-        function getFavoritesDocRef() {
-            if (!db || !userId) return null;
-            // Private data path: /artifacts/{appId}/users/{userId}/smoke_finder_favorites/favorite_stores
-            const path = `/artifacts/${appId}/users/${userId}/smoke_finder_favorites`;
-            return doc(db, path, 'favorite_stores');
-        }
-
-        function setupFavoritesListener() {
-            const docRef = getFavoritesDocRef();
-            if (!docRef) {
-                renderLocalStoreList(); 
-                return;
-            }
-
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists() && docSnap.data().storeIds) {
-                    favorites = new Set(docSnap.data().storeIds.map(String));
-                } else {
-                    favorites = new Set();
-                }
-                renderLocalStoreList();
-            }, (error) => {
-                console.error("Error listening to favorites:", error);
-            });
-        }
-
-        async function toggleFavorite(storeId) {
-            if (!isAuthReady || !userId || !db) {
-                console.error("Cannot toggle favorite: Firebase not ready.");
-                return;
-            }
-            const idString = String(storeId);
-            let newFavoritesArray = Array.from(favorites);
-
-            if (favorites.has(idString)) {
-                newFavoritesArray = newFavoritesArray.filter(id => id !== idString);
-            } else {
-                newFavoritesArray.push(idString);
-            }
-
-            const docRef = getFavoritesDocRef();
-            if (!docRef) return;
-
-            try {
-                await setDoc(docRef, { storeIds: newFavoritesArray }, { merge: true });
-            } catch (e) {
-                console.error("Error setting favorite document: ", e);
-            }
-        }
-
-        // --- CUSTOM PRICES PERSISTENCE ---
-        function getPricesDocRef() {
-            if (!db || !userId) return null;
-            // Private data path: /artifacts/{appId}/users/{userId}/smoke_finder_prices/custom_prices
-            const path = `/artifacts/${appId}/users/${userId}/smoke_finder_prices`;
-            return doc(db, path, 'custom_prices');
-        }
-
-        function setupPricesListener() {
-            const docRef = getPricesDocRef();
-            if (!docRef) {
-                calculateOptimalPurchase();
-                if ($priceEditorModal && !$priceEditorModal.classList.contains('hidden')) {
-                    renderEditorInputs();
-                }
-                return;
-            }
-
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists() && docSnap.data().prices) {
-                    try {
-                        const loadedPrices = JSON.parse(docSnap.data().prices);
-                        // Deep update CURRENT_PRICES from stored data
-                        for(const key in LOCAL_AVG_PRICES) {
-                            if (loadedPrices[key] && loadedPrices[key].cost !== undefined) {
-                                CURRENT_PRICES[key] = { ...LOCAL_AVG_PRICES[key], cost: parseFloat(loadedPrices[key].cost) };
-                            } else {
-                                CURRENT_PRICES[key] = { ...LOCAL_AVG_PRICES[key] };
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Error parsing custom prices from Firestore:", e);
-                    }
-                } else {
-                    CURRENT_PRICES = JSON.parse(JSON.stringify(LOCAL_AVG_PRICES)); // Deep clone defaults
-                }
-                // Recalculate and re-render the editor to reflect loaded prices
-                calculateOptimalPurchase();
-                if ($priceEditorModal && !$priceEditorModal.classList.contains('hidden')) {
-                    renderEditorInputs();
-                }
-            }, (error) => {
-                console.error("Error listening to prices:", error);
-            });
-        }
-        
-        async function saveCustomPrices() {
-            if (!isAuthReady || !userId || !db) {
-                console.error("Cannot save prices: Firebase not ready.");
-                return;
-            }
-            const docRef = getPricesDocRef();
-            if (!docRef) return;
-
-            try {
-                const priceData = {};
-                for(const key in CURRENT_PRICES) {
-                    priceData[key] = { cost: parseFloat(CURRENT_PRICES[key].cost) };
-                }
-                await setDoc(docRef, { prices: JSON.stringify(priceData) }, { merge: true });
-            } catch (e) {
-                console.error("Error saving custom prices: ", e);
-            }
-        }
-
-
-        // --- GEOLOCATION LOGIC ---
-        function getGeolocation() {
-            return new Promise(resolve => {
-                if (!navigator.geolocation) {
-                    userLocation.status = EN_STRINGS.locationDenied;
-                    userLocation.isAccurate = false;
-                    resolve();
-                    return;
-                }
-
-                const success = (position) => {
-                    userLocation.latitude = position.coords.latitude;
-                    userLocation.longitude = position.coords.longitude;
-                    userLocation.isAccurate = true;
-                    userLocation.status = EN_STRINGS.locationSuccess;
-                    resolve();
-                };
-
-                const error = (err) => {
-                    console.error("Geolocation error:", err.code, err.message);
-                    userLocation.isAccurate = false;
-                    userLocation.status = EN_STRINGS.locationDenied;
-                    resolve();
-                };
-
-                navigator.geolocation.getCurrentPosition(success, error, {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
-                });
-            });
-        }
-        
-        // --- UI RENDERERS ---
-
-        function updateTickerTitle() {
-            if (!$tickerLocationTitle || !$tickerDisclaimer || !$localHubDisclaimer) return;
-            
-            let locationText = userLocation.status;
-            
-            if (userLocation.isAccurate) {
-                // Location is successful, hide the generic mock data disclaimer below the title
-                $tickerDisclaimer.classList.add('hidden');
-                $tickerLocationTitle.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="#10b981" viewBox="0 0 256 256">
-                        <path d="M128,128a4,4,0,1,1,4-4A4,4,0,0,1,128,128ZM220,96c0,72-92,128-92,128S36,168,36,96a92,92,0,0,1,184,0Z" fill="#10b981"></path>
-                    </svg>
-                    <span class="text-primary">${locationText}</span>
-                `;
-                // Update the detailed disclaimer text
-                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> The **map links** and the **Search Near Me** button now use your device's location. The Shop/Price data shown are **mock averages**, not real-time quotes, and are subject to change. **No real-world addresses are stored or displayed.**`;
-            } else {
-                // Location failed or was denied, show the fallback message and the original disclaimer
-                $tickerDisclaimer.classList.remove('hidden');
-                $tickerLocationTitle.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="#f97316" viewBox="0 0 256 256">
-                        <path d="M128,128a4,4,0,1,1,4-4A4,4,0,0,1,128,128ZM220,96c0,72-92,128-92,128S36,168,36,96a92,92,0,0,1,184,0Z" fill="#f97316"></path>
-                    </svg>
-                    <span class="text-secondary">${locationText}</span>
-                `;
-                 // Reset detailed disclaimer
-                $localHubDisclaimer.innerHTML = `<span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice. **No real-world addresses are stored or displayed.**`;
-            }
-        }
-
-        function renderTickerItem(cig) {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'ticker-item p-3 shadow-md border-b-4 border-secondary';
-            itemDiv.innerHTML = `
-                <p class="font-extrabold text-white text-xl leading-tight">${cig.brand.split('(')[0].trim().split(' ')[0]}</p>
-                <p class="text-xs text-gray-300 font-mono mb-1">${cig.brand.includes('100') ? '100\'s' : 'Kings'}</p>
-                <p class="text-lg text-primary font-mono font-bold">$${cig.price.toFixed(2)}</p>
-                <p class="text-xs text-gray-400 mt-1">${cig.location}</p>
-            `;
-            itemDiv.addEventListener('click', () => {
-                let mapLink = '';
-                const brandQuery = encodeURIComponent(cig.brand);
-
-                if (userLocation.isAccurate && userLocation.latitude && userLocation.longitude) {
-                    // Location is known: Search for BRAND near user coordinates
-                    const coordinates = `${userLocation.latitude},${userLocation.longitude},15z`;
-                    mapLink = `https://www.google.com/maps/search/${brandQuery}/@${coordinates}`;
-                } else {
-                    // Location unknown: Generic search for BRAND globally
-                    mapLink = `https://www.google.com/maps/search/?api=1&query=${brandQuery}`;
-                }
-                
-                window.open(mapLink, '_blank');
-            });
-            return itemDiv;
-        }
-        
-        function renderPriceTicker() {
-            if (!$priceTicker) return;
-            $priceTicker.innerHTML = ''; 
-            if (LOCAL_CIGARETTES.length === 0) {
-                 $priceTicker.innerHTML = `<p class="text-gray-500 p-3">${EN_STRINGS.loadingPrices}</p>`;
-                 return;
-            }
-            LOCAL_CIGARETTES.forEach(cig => {
-                $priceTicker.appendChild(renderTickerItem(cig));
-            });
-        }
-        
-        function renderLocalStoreList() {
-            if (!$localStoreList) return; 
-
-            $localStoreList.innerHTML = '';
-            
-            const sortedShops = LOCAL_TOBACCO_SHOPS.sort((a, b) => {
-                const aFav = favorites.has(String(a.id));
-                const bFav = favorites.has(String(b.id));
-
-                if (aFav !== bFav) {
-                    return bFav ? -1 : 1; 
-                }
-                return a.name.localeCompare(b.name); 
-            });
-            
-            if (sortedShops.length === 0) {
-                $localStoreList.innerHTML = `<p class="text-center text-gray-500 pt-8">${EN_STRINGS.loadingShops}</p>`;
-                return;
-            }
-
-            sortedShops.forEach(shop => {
-                const isFavorited = favorites.has(String(shop.id));
-                
-                const item = document.createElement('div');
-                item.className = 'store-item bg-gray-800 p-4 rounded-lg flex items-start border-l-4 shadow-lg ' + (isFavorited ? 'border-secondary' : 'border-primary/50');
-                
-                const contentDiv = document.createElement('div');
-                contentDiv.className = 'flex-grow';
-                
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'flex items-center mb-1';
-                headerDiv.innerHTML = `
-                    <p class="font-bold text-white text-lg mr-3">${shop.name}</p>
-                    <span class="store-type">${shop.type}</span>
-                `;
-                contentDiv.appendChild(headerDiv);
-
-                contentDiv.innerHTML += `
-                    <p class="text-sm text-gray-400">${shop.address}</p>
-                    <div class="flex flex-col text-xs text-gray-400 mt-2 space-y-1">
-                        <span class="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            ${shop.hours}
-                        </span>
-                        <a href="tel:${shop.phone.replace(/[^0-9]/g, '')}" class="flex items-center hover:text-primary" onclick="event.stopPropagation();">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            ${shop.phone}
-                        </a>
-                    </div>
-                `;
-
-                const favoriteButton = document.createElement('button');
-                favoriteButton.className = 'ml-4 flex-shrink-0 p-1 rounded-full transition duration-150';
-                favoriteButton.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="${isFavorited ? '#f97316' : 'none'}" viewBox="0 0 24 24" stroke="${isFavorited ? '#f97316' : '#9ca3af'}" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.563-1.468 2.628-1.468 3.191 0l1.795 4.673a2 2 0 001.59 1.157l5.006.398c1.558.124 2.185 2.053.978 2.97l-3.832 3.013a2 2 0 00-.638 1.834l.798 4.881c.266 1.63-.522 2.766-1.928 2.028l-4.577-2.736a2 2 0 00-1.914 0l-4.577 2.736c-1.406.738-2.194-.4-.572-2.028l.798-4.881a2 2 0 00-.638-1.834L2.09 12.125c-1.207-.917-.58-2.846.978-2.97l5.006-.398a2 2 0 001.59-1.157l1.795-4.673z" />
-                    </svg>
-                `;
-                favoriteButton.addEventListener('click', (e) => {
-                    e.stopPropagation(); 
-                    toggleFavorite(shop.id);
-                });
-
-                item.addEventListener('click', () => {
-                    let mapLink = '';
-                    if (userLocation.isAccurate && userLocation.latitude && userLocation.longitude) {
-                         // Search for tobacco stores near the user's location
-                        const query = 'tobacco store';
-                        const coordinates = `${userLocation.latitude},${userLocation.longitude},15z`;
-                        mapLink = `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${coordinates}`;
-                    } else {
-                        // Fallback: search generally for the shop name
-                        const query = encodeURIComponent(shop.name + " tobacco store");
-                        mapLink = `https://www.google.com/maps/search/?api=1&query=${query}`;
-                    }
-                    window.open(mapLink, '_blank');
-                });
-
-                item.appendChild(contentDiv);
-                item.appendChild(favoriteButton);
-                $localStoreList.appendChild(item);
-            });
-        }
-
-
-        // --- EDITOR MODAL FUNCTIONALITY ---
-        function renderEditorInputs() {
-            if (!$editorInputs) return;
-            $editorInputs.innerHTML = '';
-            // Iterate over the keys of the default structure (LOCAL_AVG_PRICES) to ensure order/labels
-            for (const key in LOCAL_AVG_PRICES) {
-                const item = LOCAL_AVG_PRICES[key];
-                const inputGroup = document.createElement('div');
-                inputGroup.className = 'flex items-center justify-between';
-                
-                const label = document.createElement('label');
-                label.className = 'text-gray-300 text-sm font-medium';
-                label.textContent = item.name; 
-
-                const input = document.createElement('input');
-                input.type = 'number';
-                input.min = '0.01';
-                input.step = '0.01';
-                // Use CURRENT_PRICES for the displayed value (which holds the user's custom price)
-                input.value = CURRENT_PRICES[key].cost.toFixed(2); 
-                input.dataset.key = key;
-                input.className = 'w-1/3 p-2 bg-gray-600 border border-gray-500 rounded-lg text-white text-right';
-                
-                input.addEventListener('input', (e) => {
-                    const newValue = parseFloat(e.target.value);
-                    if (!isNaN(newValue) && newValue >= 0.01) {
-                        // Update CURRENT_PRICES immediately on input
-                        CURRENT_PRICES[e.target.dataset.key].cost = newValue;
-                    }
-                });
-
-                inputGroup.appendChild(label);
-                inputGroup.appendChild(input);
-                $editorInputs.appendChild(inputGroup);
-            }
-        }
-
-        function openEditor() {
-            renderEditorInputs();
-            if ($priceEditorModal) $priceEditorModal.classList.remove('hidden');
-        }
-
-        async function saveAndCloseEditor() {
-            // Save to Firestore, which will trigger the listener, which calls calculateOptimalPurchase()
-            await saveCustomPrices(); 
-            if ($priceEditorModal) $priceEditorModal.classList.add('hidden');
-        }
-
-        async function resetPricesToLocalAverage() {
-            // Reset local memory to the initial defaults (deep clone is crucial here)
-            CURRENT_PRICES = JSON.parse(JSON.stringify(LOCAL_AVG_PRICES)); 
-            // Save this reset state to the database
-            await saveCustomPrices();
-            // Recalculate and re-render the editor (listener handles this, but forcing here for quick UX)
-            renderEditorInputs(); 
-            calculateOptimalPurchase(); 
-        }
-
-        // --- TAB FUNCTIONALITY ---
-        function switchTab(targetTab) {
-            $$('.tab-content').forEach(content => content.classList.add('hidden'));
-            $$('.tab-button').forEach(button => button.classList.remove('active'));
-
-            if (targetTab === 'calculator') {
-                if ($calculatorContent) $calculatorContent.classList.remove('hidden');
-                if ($('[data-tab="calculator"]')) $('[data-tab="calculator"]').classList.add('active');
-                if ($priceTickerContainer) $priceTickerContainer.classList.remove('hidden'); 
-            } else if (targetTab === 'localHub') {
-                if ($localHubContent) $localHubContent.classList.remove('hidden');
-                if ($('[data-tab="localHub"]')) $('[data-tab="localHub"]').classList.add('active');
-                if ($priceTickerContainer) $priceTickerContainer.classList.add('hidden'); 
-                // Re-render the hub just in case
-                renderLocalStoreList();
-            }
-        }
-        
-        // --- CORE CALCULATION LOGIC ---
-        function calculateOptimalPurchase() {
-            if (!isAgeConfirmed || !$moneyAvailable) return; 
-
-            const T = EN_STRINGS;
-            let availableMoney = parseFloat($moneyAvailable.value) || 0;
-            let totalSpent = 0;
-            let plan = [];
-            let inventory = { wrappers: 0, tobacco_cigs: 0, rollerPurchased: false };
-            let tempMoney = availableMoney;
-            let wrapperCountFromTubes = 0;
-            let wrapperCountFromPapers = 0;
-            let primaryWrapperName = T.itemPapers; 
-            
-            // Helper function to get the correct English item name from CONSTANTS
-            const getItemName = (key) => LOCAL_AVG_PRICES[key]?.name?.split('(')[0].trim() || key;
-
-            // 1. Purchase Required Tools (Roller)
-            if (requiredItems.roller) {
-                const item = CURRENT_PRICES.roller;
-                const itemName = getItemName('roller');
-                if (tempMoney >= item.cost) {
-                    tempMoney -= item.cost;
-                    totalSpent += item.cost;
-                    inventory.rollerPurchased = true;
-                    plan.push(`- ${itemName}: **$${item.cost.toFixed(2)}**`);
-                } else {
-                    plan.push(T.planStatus.insufficientFunds(itemName, item.cost.toFixed(2)));
-                }
-            }
-            
-            const needsRoller = requiredItems.papers && !inventory.rollerPurchased;
-            if (needsRoller) {
-                plan.push(`- **WARNING:** ${T.planStatus.wrapperWarning}`);
-            }
-
-            // 2. Purchase Required Wrappers
-            let wrapperPurchaseAttempts = [];
-            
-            if (requiredItems.tubes) {
-                wrapperPurchaseAttempts.push(CURRENT_PRICES.tubes);
-            }
-            if (requiredItems.papers) {
-                wrapperPurchaseAttempts.push(CURRENT_PRICES.papers);
-            }
-            
-            // Auto-add wrapper if only tobacco is required but no wrapper was selected
-            if (requiredItems.tobacco && wrapperPurchaseAttempts.length === 0) {
-                const tubesValue = CURRENT_PRICES.tubes.cost / CURRENT_PRICES.tubes.quantity;
-                const papersValue = CURRENT_PRICES.papers.cost / CURRENT_PRICES.papers.quantity;
-                const cheapestWrapper = (tubesValue < papersValue)
-                    ? CURRENT_PRICES.tubes 
-                    : CURRENT_PRICES.papers;
-                
-                // Only auto-add if we can afford at least one unit
-                if (tempMoney >= cheapestWrapper.cost) {
-                    wrapperPurchaseAttempts.push(cheapestWrapper);
-                    plan.push(T.planStatus.autoWrapper(cheapestWrapper.name));
-                }
-            }
-
-            // Loop through potential wrapper purchases
-            for (const item of wrapperPurchaseAttempts) {
-                let unitsToBuy = 1; 
-                let itemCostPerUnit = item.cost;
-                let totalCost = itemCostPerUnit;
-                
-                // Core Efficiency Adjustment for Tubes
-                if (item.id === 'tubes' && requiredItems.tobacco) {
-                    const TOBACCO_CAPACITY_CIGS = CURRENT_PRICES.tobacco_bulk.cigs; // 440
-                    const TUBE_BOX_COUNT = Math.ceil(TOBACCO_CAPACITY_CIGS / item.quantity); // 2 boxes needed for bulk tobacco
-                    
-                    const costForBulkTobaccoAndTubes = CURRENT_PRICES.tobacco_bulk.cost + (TUBE_BOX_COUNT * itemCostPerUnit); 
-
-                    // If we can afford the bulk tobacco + the necessary tubes, buy all tubes needed now.
-                    if (tempMoney >= costForBulkTobaccoAndTubes) {
-                        unitsToBuy = TUBE_BOX_COUNT; 
-                    } else {
-                        unitsToBuy = 1; // Otherwise, only buy one box to leave budget for smaller tobacco
-                    }
-                    totalCost = unitsToBuy * itemCostPerUnit;
-                }
-                
-                if (tempMoney >= totalCost) {
-                    tempMoney -= totalCost;
-                    totalSpent += totalCost;
-                    
-                    inventory.wrappers += (unitsToBuy * item.quantity); 
-                    
-                    plan.push(`- ${item.name} (**${unitsToBuy} unit${unitsToBuy > 1 ? 's' : ''}**): **$${totalCost.toFixed(2)}**`);
-
-                    if (item.id === 'tubes') { wrapperCountFromTubes += (unitsToBuy * item.quantity); primaryWrapperName = T.itemTubes; } 
-                    else if (item.id === 'papers') { wrapperCountFromPapers += (unitsToBuy * item.quantity); primaryWrapperName = T.itemPapers; }
-                } else if (requiredItems.tubes || requiredItems.papers) {
-                    plan.push(T.planStatus.insufficientFunds(`${item.name} (${unitsToBuy} boxes)`, totalCost.toFixed(2)));
-                }
-            }
-            // -----------------------------------------------------------
-
-
-            // 3. Purchase Tobacco based on remaining budget
-            let tobaccoPurchases = [];
-            let totalCigsFromTobacco = 0;
-
-            if (requiredItems.tobacco) {
-                // Determine tobacco value (cigs / cost) and sort for best value first
-                const availableTobaccoOptions = [
-                    CURRENT_PRICES.tobacco_bulk, CURRENT_PRICES.tobacco_mid, CURRENT_PRICES.tobacco_budget
-                ].sort((a, b) => (b.cigs / b.cost) - (a.cigs / a.cost));
-                
-                let purchaseList = {};
-                for (const item of availableTobaccoOptions) {
-                    const itemCigs = item.cigs; 
-                    let numToBuy = 0;
-                    while (tempMoney >= item.cost) {
-                        numToBuy++;
-                        tempMoney -= item.cost;
-                        totalSpent += item.cost;
-                        totalCigsFromTobacco += itemCigs;
-                    }
-                    if (numToBuy > 0) {
-                        if (!purchaseList[item.name]) purchaseList[item.name] = { count: 0, totalCost: 0 };
-                        purchaseList[item.name].count += numToBuy;
-                        purchaseList[item.name].totalCost += numToBuy * item.cost;
-                    }
-                }
-                inventory.tobacco_cigs = totalCigsFromTobacco;
-
-                if (totalCigsFromTobacco > 0) {
-                    tobaccoPurchases.push(T.planStatus.tobaccoPurchases);
-                    for (const name in purchaseList) {
-                        const { count, totalCost } = purchaseList[name];
-                        const weightMatch = name.match(/\((.*?)\)/);
-                        const displayWeight = weightMatch ? `${count} x ${weightMatch[1]}` : `${count} units`;
-                        tobaccoPurchases.push(T.planStatus.tobaccoPurchase(displayWeight, totalCost.toFixed(2)));
-                    }
-                } else {
-                    tobaccoPurchases.push(T.planStatus.noTobaccoFunds);
-                }
-            }
-            
-            plan = plan.concat(tobaccoPurchases);
-            
-            // 4. FINAL INTEGRATED SUMMARY AND CIGARETTE COUNT
-            let finalMessage = "";
-            let finalCigsMade = 0;
-
-            if (requiredItems.tobacco) {
-                // Cigs made is the MIN of available tobacco yield and available wrappers
-                finalCigsMade = Math.min(inventory.tobacco_cigs, inventory.wrappers);
-                const wrapperNameUpper = primaryWrapperName.charAt(0).toUpperCase() + primaryWrapperName.slice(1);
-                
-                const wrapsCigs = inventory.wrappers;
-
-                if (inventory.tobacco_cigs === 0 || inventory.wrappers === 0) {
-                    finalMessage = `<p class="text-sm font-bold text-danger mt-4 border border-danger p-3 rounded-lg bg-red-900/30">
-                        ${T.planStatus.budgetFailure(primaryWrapperName.toLowerCase())}
-                    </p>`;
-                } else {
-                    const diff = inventory.tobacco_cigs - inventory.wrappers;
-                    if (diff > 0) {
-                        finalMessage = `<p class="text-sm font-bold text-danger mt-4 border border-danger p-3 rounded-lg bg-red-900/30">
-                            ${T.planStatus.wrapperShortage(inventory.tobacco_cigs.toFixed(0), wrapsCigs, wrapperNameUpper)}
-                        </p>`;
-                    } else if (diff < 0) {
-                        finalMessage = `<p class="text-sm font-bold text-secondary mt-4 border border-secondary p-3 rounded-lg bg-yellow-900/30">
-                            ${T.planStatus.tobaccoShortage(wrapsCigs, inventory.tobacco_cigs.toFixed(0), wrapperNameUpper)}
-                        </p>`;
-                    } else {
-                        finalMessage = `<p class="text-sm font-bold text-primary mt-4 border border-primary p-3 rounded-lg bg-green-900/30">
-                            ${T.planStatus.perfectMatch(wrapperNameUpper)}
-                        </p>`;
-                    }
-                }
-            } else {
-                 if (plan.length > 0) {
-                    finalMessage = `<p class="text-sm font-bold text-primary mt-4 border border-primary p-3 rounded-lg bg-green-900/30">
-                        ${T.planStatus.tobaccoNotNeeded}
-                    </p>`;
-                 }
-            }
-
-            // 5. RENDER OUTPUT
-            let planHtml = plan.map(item => `<p>${item}</p>`).join('');
-            
-            if (finalMessage) {
-                planHtml += finalMessage;
-            } else if (plan.length === 0 && availableMoney > 0) {
-                 planHtml = `<p class="text-center text-gray-500 pt-8">${T.planStatus.nothingPurchased}</p>`;
-            } else if (plan.length === 0 && availableMoney === 0) {
-                 planHtml = `<p class="text-center text-gray-500 pt-8">${T.initialPrompt}</p>`;
-            }
-
-            const finalRemaining = availableMoney - totalSpent;
-
-            if ($planDetails) $planDetails.innerHTML = planHtml;
-            if ($totalSpent) $totalSpent.textContent = `$${totalSpent.toFixed(2)}`;
-            if ($moneyRemaining) $moneyRemaining.textContent = `$${finalRemaining.toFixed(2)}`;
-            if ($cigsMade) $cigsMade.textContent = Math.floor(finalCigsMade).toLocaleString(); 
-
-            if ($moneyRemaining) {
-                $moneyRemaining.classList.remove('text-primary', 'text-danger', 'text-white');
-                if (finalRemaining >= 0.01) {
-                    $moneyRemaining.classList.add('text-primary'); 
-                } else if (finalRemaining > -0.01) {
-                    $moneyRemaining.classList.add('text-white');
-                } else {
-                    $moneyRemaining.classList.add('text-danger'); 
-                }
-            }
-        }
-
-        // --- NEW REAL-TIME SEARCH FUNCTION ---
-        function searchLocalShops() {
-            const query = 'tobacco store';
-            let mapLink = '';
-
-            if (userLocation.isAccurate && userLocation.latitude && userLocation.longitude) {
-                // Use coordinates to center the search on Google Maps (15z is zoom level)
-                mapLink = `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${userLocation.latitude},${userLocation.longitude},15z`;
-            } else {
-                // Fallback to a general search if coordinates aren't available
-                mapLink = `https://www.google.com/maps/search/${encodeURIComponent(query)}`;
-            }
-            window.open(mapLink, '_blank');
-        }
-
-        // --- WALKTHROUGH MODAL LOGIC ---
-        function openWalkthrough() {
-            if ($walkthroughModal) $walkthroughModal.classList.remove('hidden');
-        }
-
-        function closeWalkthrough() {
-            if ($walkthroughModal) $walkthroughModal.classList.add('hidden');
-        }
-
-        // --- EVENT HANDLERS ---
-        function toggleItemNeeded(event) {
-            if (!isAgeConfirmed) return;
-            const button = event.currentTarget; 
-            const itemKey = button.dataset.item;
-            
-            if (requiredItems.hasOwnProperty(itemKey)) {
-                const newState = !requiredItems[itemKey];
-                requiredItems[itemKey] = newState;
-                button.classList.toggle('selected', newState);
-            }
-            calculateOptimalPurchase();
-        }
-
-        function setupEventListeners() {
-            // --- Query Elements (Guaranteed safe inside window.onload) ---
-            $mainContent = $('#mainContent');
-            $moneyAvailable = $('#moneyAvailable');
-            $calculateBtn = $('#calculateBtn');
-            $planDetails = $('#planDetails');
-            $totalSpent = $('#totalSpent');
-            $moneyRemaining = $('#moneyRemaining');
-            $cigsMade = $('#cigsMade'); 
-            $priceTicker = $('#priceTicker');
-            $priceTickerContainer = $('#priceTickerContainer');
-            $locationStatus = $('#locationStatus');
-            $tickerLocationTitle = $('#tickerLocationTitle');
-            $tickerDisclaimer = $('#tickerDisclaimer');
-            $editorBtn = $('#editorBtn');
-            $priceEditorModal = $('#priceEditorModal');
-            $saveAndCloseEditorBtn = $('#saveAndCloseEditorBtn');
-            $resetPricesBtn = $('#resetPricesBtn');
-            $editorInputs = $('#editorInputs');
-            $ageVerificationModal = $('#ageVerificationModal');
-            $confirmAgeBtn = $('#confirmAgeBtn');
-            $tabButtons = $$('.tab-button');
-            $calculatorContent = $('#calculatorContent');
-            $localHubContent = $('#localHubContent');
-            $localStoreList = $('#localStoreList');
-            $localHubDisclaimer = $('#localHubDisclaimer'); 
-            $liveSearchBtn = $('#liveSearchBtn'); 
-            // New Guide elements
-            $guideBtn = $('#guideBtn');
-            $walkthroughModal = $('#walkthroughModal');
-            $closeWalkthroughBtn = $('#closeWalkthroughBtn');
-            $closeWalkthroughBottomBtn = $('#closeWalkthroughBottomBtn');
-            // -----------------------------------------------------------
-
-            // Age confirmation button
-            if ($confirmAgeBtn) $confirmAgeBtn.addEventListener('click', confirmAge);
-            
-            // Guide buttons
-            if ($guideBtn) $guideBtn.addEventListener('click', openWalkthrough);
-            if ($closeWalkthroughBtn) $closeWalkthroughBtn.addEventListener('click', closeWalkthrough);
-            if ($closeWalkthroughBottomBtn) $closeWalkthroughBottomBtn.addEventListener('click', closeWalkthrough);
-            
-            // Item selection buttons
-            if ($('#rollerNeeded')) $('#rollerNeeded').addEventListener('click', toggleItemNeeded);
-            if ($('#tubesNeeded')) $('#tubesNeeded').addEventListener('click', toggleItemNeeded);
-            if ($('#papersNeeded')) $('#papersNeeded').addEventListener('click', toggleItemNeeded); 
-            if ($('#tobaccoNeeded')) $('#tobaccoNeeded').addEventListener('click', toggleItemNeeded);
-            
-            // Calculator events
-            if ($calculateBtn) $calculateBtn.addEventListener('click', calculateOptimalPurchase);
-            
-            // Calculate on Enter key press or focus loss (better mobile UX)
-            if ($moneyAvailable) {
-                $moneyAvailable.addEventListener('blur', calculateOptimalPurchase);
-                $moneyAvailable.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') {
-                        event.preventDefault(); 
-                        calculateOptimalPurchase();
-                        event.target.blur(); 
-                    }
-                });
-            }
-            
-            // Editor events
-            if ($editorBtn) $editorBtn.addEventListener('click', openEditor);
-            if ($priceEditorModal) {
-                 $priceEditorModal.addEventListener('click', (e) => {
-                    // Close if background is clicked
-                    if (e.target === $priceEditorModal) {
-                        saveAndCloseEditor();
-                    }
-                });
-            }
-            if ($saveAndCloseEditorBtn) $saveAndCloseEditorBtn.addEventListener('click', saveAndCloseEditor);
-            if ($resetPricesBtn) $resetPricesBtn.addEventListener('click', resetPricesToLocalAverage);
-            
-            // Tab events
-            $$('.tab-button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    switchTab(e.target.dataset.tab);
-                });
-            });
-
-            // Live Search Button Event
-            if ($liveSearchBtn) $liveSearchBtn.addEventListener('click', searchLocalShops);
-
-             // Set initial button styles and calculator state
-            ['roller', 'tubes', 'papers', 'tobacco'].forEach(key => {
-                const button = $(`#${key}Needed`);
-                if (button) button.classList.toggle('selected', requiredItems[key]);
-            });
-            switchTab('calculator'); 
-        }
-
-        // --- INITIALIZATION (ASYNC OPERATIONS ONLY) ---
-        async function initializeAppAsync() {
-            // 1. Get Location
-            await getGeolocation();
-            
-            // 2. Setup Firebase (this handles loading of favorites and custom prices)
-            await firebaseSetup(); 
-            
-            // 3. Initial renders (dependent on loaded data/location)
-            updateTickerTitle();
-            renderPriceTicker();
-            // calculateOptimalPurchase is now called by the Firebase listener, 
-            // but we call it once here in case Firebase is slow/unavailable.
-            if (!db || !userId) {
-                calculateOptimalPurchase(); 
-            }
-        }
-
-        // Attach listeners and query DOM elements only after the window has loaded.
-        window.onload = () => {
-            setupEventListeners(); 
-            // The main app initialization is blocked until confirmAge() is called.
-        };
-
-    </script>
-</body>
-</html>
-
- 
