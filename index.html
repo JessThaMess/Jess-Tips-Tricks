@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smoke Finder Optimal Purchase Plan</title>
+    <title>Dynamic Smoke Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FIREBASE IMPORTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Expose Firebase objects globally for use in the main script block
+        window.FirebaseServices = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, getDoc, setDoc, setLogLevel };
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -13,377 +22,1104 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        'primary': '#10b981', /* Green for Calculate/Action */
-                        'secondary': '#f97316', /* Orange/Accent (Favorite Star color) */
-                        'danger': '#ef4444', /* Red for severe warnings */
-                        'card-bg': '#1f2937', /* Dark Card Background */
-                        'editor-bg': '#374151', /* Gray-700 for Modal */
+                        'primary': 'var(--primary-color)',
+                        'secondary': 'var(--secondary-color)',
+                        'danger': '#ef4444', 
+                        'card-bg': 'var(--card-bg)', 
+                        'text-main': 'var(--text-color)',
+                        'text-sub': 'var(--sub-text-color)',
+                        'editor-bg': '#374151',
+                        'ad-bg': 'rgba(234, 179, 8, 0.1)',
                     }
                 }
             }
         }
     </script>
     <style>
+        /* --- CSS VARIABLES FOR DYNAMIC THEMING --- */
+        :root {
+            --primary-color: #10b981;        /* Green */
+            --secondary-color: #f97316;      /* Orange Accent */
+            --card-bg: rgba(31, 41, 55, 0.85); /* Slightly transparent dark background */
+            --text-color: #e5e7eb;           /* Light gray for main text */
+            --sub-text-color: #9ca3af;       /* Medium gray for sub text */
+            --main-bg-image: url('https://placehold.co/1200x800/1e293b/ffffff?text=Optimal+Planner+Background');
+        }
+
         body {
-            background-color: #0f172a; /* Dark Blue Background */
-            color: #e5e7eb;
+            background-color: #0f172a; 
+            color: var(--text-color);
             min-height: 100vh;
+            background-image: var(--main-bg-image);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            transition: background-image 0.5s, background-color 0.5s;
         }
-        .container {
-            max-width: 420px;
+        
+        .backdrop-blur {
+            backdrop-filter: blur(6px);
+            background-color: rgba(15, 23, 42, 0.3); 
         }
-        input[type="number"] {
-            -moz-appearance: textfield;
-        }
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .item-button {
-            transition: all 0.1s;
-        }
+
+        /* --- STYLING USING CSS VARIABLES --- */
+        .container { max-width: 420px; }
+        .bg-card-bg { background-color: var(--card-bg); }
+        .text-primary { color: var(--primary-color); }
+        .border-primary { border-color: var(--primary-color); }
+        .bg-primary { background-color: var(--primary-color); }
+        .shadow-primary\/30 { box-shadow: 0 10px 15px -3px var(--primary-color)30, 0 4px 6px -4px var(--primary-color)30; }
+
+        .text-secondary { color: var(--secondary-color); }
+        .border-secondary { border-color: var(--secondary-color); }
+        .bg-secondary\/80 { background-color: var(--secondary-color); }
+        
+        .text-text-main { color: var(--text-color); }
+        .text-text-sub { color: var(--sub-text-color); }
+        
+        .item-button { transition: all 0.1s; }
         .item-button.selected {
-            background-color: #10b981; /* Primary Green */
+            background-color: var(--primary-color); 
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4), 0 2px 4px -2px rgba(16, 185, 129, 0.4);
-            border: 2px solid #047857;
+            box-shadow: 0 4px 6px -1px var(--primary-color)60, 0 2px 4px -2px var(--primary-color)60;
+            border: 2px solid var(--primary-color);
         }
         .item-button:not(.selected) {
-            background-color: #4b5563; 
-            color: #e5e7eb;
-            border: 2px solid #4b5563;
+            background-color: rgba(75, 85, 99, 0.5); 
+            color: var(--text-color);
+            border: 2px solid rgba(75, 85, 99, 0.5);
         }
-        .optimal-plan p, .optimal-plan ul {
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
-            line-height: 1.5;
-        }
-        /* Ticker Styling - Added visual pack distinction */
-        .ticker-item {
-            cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.2s;
-            flex-shrink: 0;
-            opacity: 0.9;
-            animation: pulse-glow 2s infinite alternate;
-            background: linear-gradient(135deg, #4b5563, #374151); 
-            border-radius: 0.5rem 0.5rem 0.75rem 0.75rem; 
-            padding: 0.75rem;
-            width: 150px; 
-            border-bottom: 3px solid #f97316; 
-        }
-        .ticker-item:hover {
-            transform: scale(1.03);
-            opacity: 1;
-            box-shadow: 0 0 15px rgba(249, 115, 22, 0.9);
-        }
-        @keyframes pulse-glow {
-            from { box-shadow: 0 0 5px rgba(249, 115, 22, 0.4); }
-            to { box-shadow: 0 0 10px rgba(249, 115, 22, 0.7); }
-        }
-        .tab-button.active {
-            border-bottom: 3px solid #f97316; 
-            color: #f97316;
-            font-weight: 700;
-        }
-        .tab-button {
-            border-bottom: 3px solid transparent;
-        }
-        /* Store Item Styling for Clickability */
-        .store-item {
-            cursor: pointer;
-            transition: background-color 0.15s;
-        }
-        .store-item:hover {
-            background-color: #374151; 
-        }
-        /* Custom Tapered Button Style */
         .tapered-btn {
             border-radius: 0.5rem 0.5rem 0.75rem 0.75rem; 
             padding-top: 1.25rem;
             padding-bottom: 1.25rem;
         }
-        /* New Location Status Styling (Centered Block) */
-        #locationStatus {
-            padding: 0.75rem;
-            margin-bottom: 1.5rem;
-            background-color: #1f2937; 
-            border-radius: 0.75rem;
-            border: 1px solid #374151; 
-            text-align: center;
-        }
-        #tickerLocationTitle {
-            justify-content: center;
-        }
+        .modal-overlay { z-index: 1000; }
+        .editor-input-rgba { width: 100px !important; }
+        .ad-section { border: 2px dashed #fcd34d; }
+        
+        /* HIDE AD SECTION */
+        #adSectionContainer { display: none; }
 
-        /* Modal specific styles */
-        .modal-overlay {
-            z-index: 1000;
-        }
-        .store-type {
-            font-size: 0.65rem;
-            padding: 2px 6px;
-            border-radius: 9999px;
-            font-weight: 600;
-            background-color: #374151;
-            color: #9ca3af;
-        }
-        .source-link {
-            display: block;
-            margin-top: 0.5rem;
-            color: #60a5fa; /* Blue link color */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
     </style>
 </head>
 <body class="font-sans flex items-center justify-center p-4">
     
-    <div id="mainContent" class="container w-full bg-card-bg p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700 hidden">
+    <div class="backdrop-blur fixed inset-0"></div>
+
+    <div id="mainContent" class="container w-full bg-card-bg p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700 relative z-10 text-text-main">
         
-        <header class="mb-4 relative">
-            <div class="text-center">
-                <h1 class="text-3xl font-extrabold text-primary">SMOKE FINDER</h1>
-                <p class="text-sm text-gray-400 mt-1">Optimal Purchase Planner</p>
-            </div>
-            <button id="guideBtn" class="absolute top-0 right-0 p-1 rounded-lg text-gray-400 hover:text-secondary transition duration-150">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9.247a3.75 3.75 0 100 5.506 3.75 3.75 0 000-5.506zm3.5-2.247h.001M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </button>
+        <header class="mb-6 relative text-center">
+            <h1 class="text-3xl font-extrabold text-primary">PURCHASE OPTIMIZER</h1>
+            <p class="text-sm text-text-sub mt-1">Budgeting for DIY Supplies</p>
         </header>
         
-        <div id="locationStatus" class="text-sm opacity-90">
-            <p id="tickerLocationTitle" class="font-semibold text-secondary flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="#f97316" viewBox="0 0 256 256">
-                    <path d="M128,128a4,4,0,1,1,4-4A4,4,0,0,1,128,128ZM220,96c0,72-92,128-92,128S36,168,36,96a92,92,0,0,1,184,0Z" fill="#f97316"></path>
-                </svg>
-                <span>Finding location...</span>
-            </p>
-            <p id="tickerDisclaimer" class="text-gray-400 mt-1">Using mock data.</p>
-        </div>
-
-        <div class="flex border-b border-gray-700 mb-6">
-            <button class="tab-button p-3 flex-1 text-center text-gray-300 hover:text-secondary transition duration-150 active" data-tab="calculator">
-                Calculator
-            </button>
-            <button class="tab-button p-3 flex-1 text-center text-gray-300 hover:text-secondary transition duration-150" data-tab="localHub">
-                Local Smoke Hub
-            </button>
-        </div>
-
-        <div id="priceTickerContainer" class="mb-6 bg-gray-800 p-3 rounded-xl border border-gray-700">
-            <h2 class="text-md font-semibold text-white mb-2 border-b border-gray-700 pb-1">Lowest-Priced Packs Nearby (Mock Avg.)</h2>
-            <div id="priceTicker" class="flex overflow-x-auto space-x-3 pb-2">
-                <p class="text-gray-500 p-3">Loading pack prices...</p>
-            </div>
-        </div>
-
-        <div id="calculatorContent" class="tab-content">
+        <div id="calculatorContent">
+            <!-- Main Inputs -->
             <div class="mb-6">
-                <label for="moneyAvailable" class="block text-sm font-medium text-gray-300 mb-1">Total Money Available ($)</label>
-                <input type="number" id="moneyAvailable" value="30.00" min="0" step="0.01" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-secondary focus:border-secondary transition duration-150 text-white shadow-md text-xl">
+                <label for="moneyAvailable" class="block text-sm font-medium text-text-main mb-1">Total Money Available ($)</label>
+                <input type="text" id="moneyAvailable" value="30.00" min="0" step="0.01" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-secondary focus:border-secondary transition duration-150 text-text-main shadow-md text-xl">
             </div>
 
             <div class="mb-8">
-                <h2 class="text-lg font-semibold text-gray-300 mb-3">What do you need to buy?</h2>
+                <h2 class="text-lg font-semibold text-text-main mb-3">Required Items</h2>
                 
                 <div class="space-y-3">
                     <div class="flex justify-center space-x-4">
-                        <button id="rollerNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="roller">Roller</button>
+                        <button id="rollerNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="roller">Roller Tool</button>
                         <button id="tubesNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="tubes">Tubes</button>
                     </div>
 
                     <div class="flex justify-between w-11/12 mx-auto space-x-2">
-                        <button id="papersNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="papers">Papers</button>
-                        <button id="tobaccoNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="tobacco">Tobacco</button>
+                        <button id="papersNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="papers">Papers (100ct)</button>
+                        <button id="tobaccoNeeded" class="item-button p-3 rounded-xl text-sm font-semibold w-5/12" data-item="tobacco_any">Tobacco</button>
                     </div>
                 </div>
             </div>
 
-            <button id="calculateBtn" class="w-full tapered-btn bg-primary text-white text-lg font-extrabold hover:bg-opacity-90 transition duration-150 mb-6 shadow-lg shadow-primary/30">
+            <!-- Action Buttons -->
+            <button id="calculateBtn" class="w-full tapered-btn bg-primary text-white text-lg font-extrabold hover:opacity-90 transition duration-150 mb-6 shadow-lg shadow-primary/30">
                 Calculate Best Value
             </button>
 
-            <button id="editorBtn" class="w-full p-3 bg-gray-600 text-gray-200 font-bold rounded-xl hover:bg-gray-500 transition duration-150 mb-8">
-                Price Editing Tool (Input Your Store Prices)
+            <button id="editorBtn" class="w-full p-3 bg-gray-600 text-text-main font-bold rounded-xl hover:bg-gray-500 transition duration-150 mb-8">
+                Price Editing Tool (Settings)
             </button>
+            
+            <div id="loadingIndicator" class="hidden text-center text-secondary text-sm mb-4">
+                Loading settings from profile...
+            </div>
+            
+            <!-- Future Ad/Link Section (Temporarily Hidden via CSS) -->
+            <div id="adSectionContainer" class="ad-section bg-ad-bg p-4 rounded-xl mb-8">
+                <h3 class="text-sm font-bold text-yellow-300 uppercase tracking-wider mb-2">Featured Apps</h3>
+                <div id="adContent" class="text-center text-xs text-text-sub italic">
+                    <!-- This area is reserved for future self-published app advertisements and links. -->
+                    <p>Reserved for future link integration: (App 1 | App 2 | App 3)</p>
+                </div>
+            </div>
 
+            <!-- Output/Plan -->
             <div class="bg-gray-800 p-5 rounded-xl optimal-plan border-t-4 border-secondary" id="planOutputContainer">
-                <h2 class="text-xl font-extrabold text-secondary mb-3 border-b border-gray-700 pb-2">Optimal Purchase Plan</h2>
-                <div id="planDetails" class="min-h-[150px] text-gray-300 text-sm">
-                    <p class="text-center text-gray-500 pt-8">Enter your budget and select items to calculate the plan.</p>
+                <h2 class="text-xl font-extrabold text-secondary mb-3 border-b border-gray-700 pb-2">Optimal Purchase Plan (with Tax)</h2>
+                <div id="planDetails" class="min-h-[150px] text-text-main text-sm">
+                    <p class="text-center text-text-sub pt-8">Loading settings...</p>
                 </div>
 
-                <div id="cigsSummary" class="mt-4 pt-4 border-t border-gray-700 flex justify-between">
-                    <div class="text-lg font-bold">Total Spent: <span id="totalSpent" class="text-primary">$0.00</span></div>
-                    <div class="text-lg font-bold">Money Remaining: <span id="moneyRemaining" class="text-primary">$0.00</span></div>
-                </div>
-                <div class="mt-2 text-center">
-                    <div class="text-xl font-extrabold text-white p-2 rounded-lg bg-secondary/80 shadow-lg">
-                        Estimated Cigarettes: <span id="cigsMade" class="text-white">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="localHubContent" class="tab-content hidden">
-            <h2 class="text-xl font-extrabold text-secondary mb-4 border-b border-gray-700 pb-2">Local Smoke Hub (Shops & Directions)</h2>
-            <p class="text-sm text-gray-400 mb-4">Click the star to favorite a location. Click the shop for directions, or use the button below to search near you.</p>
-            
-            <button id="liveSearchBtn" class="w-full p-4 bg-primary text-white text-lg font-bold rounded-xl hover:bg-opacity-90 transition duration-150 mb-4 shadow-lg shadow-primary/30 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.8A2 2 0 0110.586 20.8L6.343 16.657A8 8 0 1117.657 16.657z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Search for Tobacco Stores Near Me
-            </button>
-            
-            <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 border border-secondary/50">
-                <h3 class="text-xl font-bold text-secondary mb-3 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="#f97316" viewBox="0 0 24 24" stroke="none">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-                    </svg>
-                    Ask Gemini (Price Search)
-                </h3>
-                <p class="text-sm text-gray-400 mb-3">Ask about specific brand prices or availability in your area. **Feature Disabled: Requires a private API Key.**</p>
-                
-                <input type="text" id="aiQueryInput" placeholder="e.g., 'Marlboro Red 100s price in Utah'" class="w-full p-3 mb-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-secondary focus:border-secondary transition duration-150 text-white shadow-md" disabled>
-                
-                <button id="aiSearchBtn" class="w-full p-3 bg-gray-700 text-gray-500 font-bold rounded-lg" disabled>
-                    <span id="aiSearchBtnText">Search Current Prices (Disabled)</span>
-                    <svg id="aiSearchSpinner" class="animate-spin h-5 w-5 text-white ml-2 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                </button>
-
-                <div id="aiResultContainer" class="mt-4 pt-3 border-t border-gray-700 hidden">
-                    <p class="font-bold text-gray-300 mb-2">Gemini's Analysis:</p>
-                    <div id="aiResultText" class="text-sm text-gray-300 bg-gray-900 p-3 rounded-lg"></div>
-                    <div id="aiResultSources" class="text-xs mt-3 text-gray-500"></div>
-                </div>
-            </div>
-            
-            <div class="bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4">
-                <p id="localHubDisclaimer" class="text-xs text-gray-400">
-                    <span class="font-bold text-secondary">Disclaimer:</span> Price and location data shown are generated from publicly available information and averages. This is **not** a direct quote or guaranteed price from any establishment listed. Prices are subject to change without notice. **No real-world addresses are stored or displayed.**
-                </p>
-            </div>
-
-            <div id="localStoreList" class="space-y-3">
-                <p class="text-center text-gray-500 pt-8">Loading shops...</p>
-            </div>
-        </div>
-
-
-        <div id="priceEditorModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div class="bg-editor-bg p-6 rounded-xl w-full max-w-sm border border-gray-600 shadow-2xl max-h-[90vh] overflow-y-auto">
-                <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Price Editing Tool</h3>
-                <p class="text-gray-400 mb-4 text-sm">Customize the prices of RYO items. Changes are saved to your browser's local storage.</p>
-
-                <div id="editorInputs" class="space-y-4 mb-6">
+                <div id="cigsSummary" class="mt-4 pt-4 border-t border-gray-700">
+                    <div class="flex justify-between text-sm text-text-sub mb-2">
+                         <span>Subtotal: <span id="subTotal">$0.00</span></span>
+                         <span id="taxDisplayLabel">Tax (Custom 0.000%): <span id="taxAmount">$0.00</span></span>
                     </div>
 
-                <button id="resetPricesBtn" class="w-full p-3 bg-danger text-white font-bold rounded-lg hover:bg-red-600 transition duration-150 mb-3">
-                    Reset Prices to Local Average
-                </button>
-                <button id="saveAndCloseEditorBtn" class="w-full p-3 bg-primary text-white font-bold rounded-lg hover:bg-opacity-90">
-                    Save and Close
-                </button>
-            </div>
-        </div>
-
-        <div id="walkthroughModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div class="bg-editor-bg p-6 rounded-xl w-full max-w-lg border border-gray-600 shadow-2xl max-h-[95vh] overflow-y-auto">
-                <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2 flex justify-between items-center">
-                    App Walkthrough Guide
-                    <button id="closeWalkthroughBtn" class="text-gray-400 hover:text-white p-1 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </h3>
-
-                <div class="text-gray-300 space-y-4 text-sm">
-                    <p>Welcome to the Optimal Purchase Planner! This app helps you get the most value for your budget by calculating the best RYO (Roll-Your-Own) purchases based on current market averages or your custom prices.</p>
-
-                    <h4 class="text-lg font-bold text-secondary mt-4">1. The Calculator Tab</h4>
-                    <ul class="list-disc pl-5 space-y-2">
-                        <li>**Money Available:** Enter the exact dollar amount you plan to spend. Calculation runs automatically when you finish typing.</li>
-                        <li>**What Do You Need?** Select which items you are missing. The app will only calculate purchases for the items you mark as **required** (green background).</li>
-                        <li>**Calculate Best Value:** The planner determines the most efficient way to spend your budget on the required items, prioritizing the cheapest RYO unit cost (tobacco) and ensuring you have wrappers.</li>
-                        <li>**Output:** The results show the breakdown of purchases, the **Total Spent**, **Money Remaining**, and the estimated **Total Cigarettes** you can make based on the purchase limits (whichever is lower: tobacco or wrappers).</li>
-                    </ul>
-
-                    <h4 class="text-lg font-bold text-secondary mt-4">2. Price Editing Tool (Customization)</h4>
-                    <p>Prices change! Use this tool to enter the **actual current prices** you pay for each item at your local shop.</p>
-                    <ul class="list-disc pl-5 space-y-2">
-                        <li>**Saving:** Your custom prices are automatically saved to your **browser's local storage**. They will persist on this device even if you close and reopen the app.</li>
-                        <li>**Reset:** The `Reset Prices to Local Average` button clears your custom data and restores the default prices.</li>
-                    </ul>
-                    
-                    <h4 class="text-lg font-bold text-secondary mt-4">3. Local Smoke Hub Tab</h4>
-                    <ul class="list-disc pl-5 space-y-2">
-                        <li>**Google Maps Search:** Use the **"Search for Tobacco Stores Near Me"** button to open a real-time Google Maps search centered on your current location.</li>
-                        <li>**Gemini Price Search:** This feature is **disabled** as it requires a private API key for real-time web grounding.</li>
-                        <li>**Price Ticker:** This section (visible in the Calculator tab) displays mock prices for popular pre-rolled cigarette packs nearby, based on a local average. **Clicking a pack now searches for that specific brand near your current device location.**</li>
-                        <li>**Shops & Directions:** The list provides generic search links. **No real-world addresses are stored or displayed to protect your privacy.**</li>
-                        <li>**Favoriting:** Click the **star icon** next to a shop to save it to your favorites in local storage.</li>
-                        <li>**Directions:** Click the shop entry to open a Google Maps search link to nearby tobacco stores.</li>
-                    </ul>
+                    <div class="flex justify-between">
+                        <div class="text-lg font-bold">Total Spent: <span id="totalSpent" class="text-primary">$0.00</span></div>
+                        <div class="text-lg font-bold">Money Remaining: <span id="moneyRemaining" class="text-primary">$0.00</span></div>
+                    </div>
                 </div>
-
-                <button id="closeWalkthroughBottomBtn" class="w-full mt-6 p-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-500">
-                    Got It! Close Guide
-                </button>
+                
+                <div class="mt-4 text-center">
+                    <div class="text-xl font-extrabold text-text-main p-2 rounded-lg bg-secondary/80 shadow-lg">
+                        Estimated Items Made: <span id="cigsMade" class="text-text-main">0</span>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <footer class="text-center mt-6 pt-4 border-t border-gray-700">
-            <p class="text-xs text-gray-500">
-                Created by: <span class="font-semibold text-purple-400">Jess-Hobo-LLC</span>
+        <footer class="text-center mt-6 pt-4 border-t border-gray-700 space-y-2">
+            <p class="text-xs text-yellow-400 font-medium">
+                Disclaimer: This is a budgeting tool based on presumptive prices and tax rates. These are NOT quotes from any business.
             </p>
-            <p id="betaDisclaimer" class="text-xs text-gray-600 mt-1 italic">
-                (Psst. This is a beta project. Updates are random, and we're just tooling around.)
+            <p id="customFooterMessage" class="text-xs text-text-sub">
+                <!-- Custom Footer Message will be inserted here -->
             </p>
         </footer>
     </div>
     
-    <div id="ageVerificationModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4">
-        <div class="bg-card-bg p-6 rounded-xl w-full max-w-sm border border-gray-700 shadow-2xl text-center">
-            <h3 class="text-2xl font-extrabold text-secondary mb-4">Age Verification Required</h3>
-            <p class="text-gray-300 mb-6 text-sm">
-                By clicking "I Am Of Legal Age," you confirm that you are of legal smoking age in your jurisdiction.
-                This application is intended for informational use only and is not intended to promote or sell tobacco products.
+    <!-- Price Editor Modal -->
+    <div id="priceEditorModal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 modal-overlay">
+        <div class="bg-editor-bg p-6 rounded-xl w-full max-w-md border border-gray-600 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 class="text-2xl font-bold text-white mb-4 border-b border-gray-600 pb-2">App Settings & Price Editor</h3>
+            <p class="text-gray-400 mb-4 text-sm">Customize prices, tax rate, and advanced theme/messaging settings. (Secret code `themeup` to unlock advanced tools).</p>
+
+            <div id="editorInputs" class="space-y-4 mb-6">
+                <!-- Inputs generated by JS -->
+            </div>
+
+            <div id="advancedSettings" class="hidden mt-8 pt-4 border-t-2 border-primary/50 space-y-8">
+                <h4 class="text-xl font-bold text-primary mb-4">⚙️ Advanced Tools</h4>
+
+                <!-- Messaging Section -->
+                <div class="bg-gray-700 p-4 rounded-lg space-y-3">
+                    <h5 class="text-lg font-semibold text-white border-b border-gray-600 pb-2">1. Messaging & Communication</h5>
+                    
+                    <label class="block text-sm font-medium text-white">Custom Footer Message</label>
+                    <textarea id="footerMessageInput" rows="2" class="w-full p-2 bg-gray-600 rounded text-sm text-white focus:ring-primary focus:border-primary"></textarea>
+                    <p class="text-xs text-text-sub italic">Displayed at the very bottom of the page.</p>
+                    
+                    <label class="block text-sm font-medium text-white pt-4">Important Pop-up Message</label>
+                    <textarea id="importantMessageInput" rows="4" class="w-full p-2 bg-gray-600 rounded text-sm text-white focus:ring-secondary focus:border-secondary"></textarea>
+                    <p class="text-xs text-yellow-300 italic">This message will appear once per user, until the text content is changed.</p>
+
+                </div>
+
+                <!-- Theme Customization Section -->
+                <div class="bg-gray-700 p-4 rounded-lg space-y-3">
+                    <h5 class="text-lg font-semibold text-white border-b border-gray-600 pb-2">2. Custom Default Theme</h5>
+                    <div class="space-y-3" id="customThemeInputs">
+                        <!-- Custom theme inputs generated here -->
+                    </div>
+                </div>
+
+                <!-- Holiday Section -->
+                <div class="bg-gray-700 p-4 rounded-lg space-y-3">
+                    <h5 class="text-lg font-semibold text-white border-b border-gray-600 pb-2">3. Scheduled Holiday Themes (Max 6)</h5>
+                    <p class="text-xs text-yellow-300">Image Note: Use a public URL or a Base64 string.</p>
+                    <p class="text-xs text-text-sub">Set a Start Date and End Date (MM-DD format) to define the grace period for the theme.</p>
+                    <div id="holidayThemeInputs" class="space-y-6">
+                        <!-- Holiday slots generated here -->
+                    </div>
+                </div>
+            </div>
+
+            <button id="resetPricesBtn" class="w-full p-3 bg-danger text-white font-bold rounded-lg hover:bg-red-600 transition duration-150 mb-3 mt-8">
+                Reset ALL Settings
+            </button>
+            <button id="saveAndCloseEditorBtn" class="w-full p-3 bg-primary text-white font-bold rounded-lg hover:opacity-90">
+                Save and Close
+            </button>
+        </div>
+    </div>
+    
+    <!-- Important Message Pop-up Modal -->
+    <div id="importantMessageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[1100] modal-overlay">
+        <div class="bg-white p-6 rounded-xl w-full max-w-sm border border-secondary shadow-2xl text-gray-900">
+            <h3 class="text-xl font-extrabold text-secondary mb-3 border-b border-gray-300 pb-2 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-danger" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                Important Notice
+            </h3>
+            <p id="importantMessageText" class="text-sm mb-6 text-gray-700">
+                <!-- Message content inserted here -->
             </p>
-            <button id="confirmAgeBtn" class="w-full p-3 bg-primary text-white font-bold rounded-lg hover:bg-opacity-90 transition duration-150">
-                I Am Of Legal Age
+            <button id="dismissMessageBtn" class="w-full p-3 bg-secondary text-white font-bold rounded-lg hover:bg-orange-600 transition duration-150">
+                Got It, Thanks!
             </button>
         </div>
     </div>
 
+
     <script type="module">
+        // --- FIREBASE INITIALIZATION ---
+        const { 
+            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, 
+            getFirestore, doc, getDoc, setDoc, setLogLevel
+        } = window.FirebaseServices;
+
+        // Mandated Global Variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        let userId = 'loading'; // Will be set after auth completes
+        let isAuthReady = false;
+
+        // Firestore Path for the User's Private Settings
+        const SETTINGS_DOC_REF = (uid) => doc(db, `/artifacts/${appId}/users/${uid}/settings/smoke_calculator`);
+
+        async function initializeFirebase() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.error("Firebase config is missing or invalid.");
+                return;
+            }
+
+            try {
+                // Set Debug Level for Firestore
+                setLogLevel('error');
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Sign in with custom token or anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                // Wait for auth state to be confirmed
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        console.log("Firebase Auth Ready. User ID:", userId);
+                        // Once authenticated, proceed with loading settings
+                        window.loadAndDisplayInitialState();
+                    } else {
+                        // This case should be rare if signInAnonymously is successful, but handle it.
+                        console.warn("User not authenticated, using a fallback anonymous ID.");
+                        userId = crypto.randomUUID();
+                        isAuthReady = true;
+                        window.loadAndDisplayInitialState();
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                // Fallback to local storage if Firebase fails completely (but still load the app)
+                isAuthReady = true;
+                userId = crypto.randomUUID();
+                window.loadAndDisplayInitialState(true);
+            }
+        }
+        
         // --- CONSTANTS AND DEFAULTS ---
         const CIGS_PER_OZ = 40; 
-        const API_MODEL = "gemini-2.5-flash-preview-09-2025";
-        const API_URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent`;
-        const apiKey = ""; // API key is not required for this local version.
-
-        const LOCAL_AVG_PRICES = {
-            roller: { name: "Roller (Basic)", cost: 8.70, type: 'tool', needed: false, id: 'roller' },
-            tubes: { name: "Tubes (250 ct Box)", cost: 3.80, quantity: 250, type: 'wrapper', needed: false, id: 'tubes' },
-            papers: { name: "Papers (100 ct Pack)", cost: 1.63, quantity: 100, type: 'wrapper', needed: false, id: 'papers' },
-            // Tobacco bulk item yield (16 oz * 40 cigs/oz = 640 cigs/lb). Using 440 for 16oz based on context.
-            tobacco_bulk: { name: "Tobacco (16 oz Bulk Bag)", cost: 25.00, weight: 16, type: 'tobacco', cigs: 440, id: 'tobacco_bulk' },
-            tobacco_mid: { name: "Tobacco (1.0 oz Mid Range)", cost: 3.80, weight: 1.0, type: 'tobacco', cigs: 1 * CIGS_PER_OZ, id: 'tobacco_mid' },
-            tobacco_budget: { name: "Tobacco (0.5 oz Budget)", cost: 1.63, weight: 0.5, type: 'tobacco', cigs: 0.5 * CIGS_PER_OZ, id: 'tobacco_budget' },
+        const INITIAL_TAX_RATE = 0.07725; 
+        const SECRET_CODE = 'themeup'; 
+        
+        const DEFAULT_THEME = {
+            bgImage: 'https://placehold.co/1200x800/1e293b/ffffff?text=Optimal+Planner+Background',
+            primaryColor: '#10b981',       
+            secondaryColor: '#f97316',     
+            cardBgRgba: 'rgba(31, 41, 55, 0.85)', 
+            textColor: '#e5e7eb',          
+            subTextColor: '#9ca3af',       
+        };
+        
+        const DEFAULT_MESSAGING = {
+            footerMessage: 'Feedback & Suggestions: JessHoboLLC@gmail.com',
+            importantMessage: '',
+            lastSeenMessage: '',
         };
 
-        const EN_STRINGS = {
-            locationFinding: "Locating device...",
-            locationSuccess: "Using Device Location",
-            locationDenied: "Location Access Denied / Fallback",
-            mockDataDisclaimer: "Note: Shop/Price data shown are **mock averages**, not real-time quotes.",
-            loadingPrices: "Loading pack prices...",
-            loadingShops: "Loading shops...",
-            itemRoller: "Roller",
-            itemTubes: "Tubes",
-            itemPapers: "Papers",
-            itemTobacco: "Tobacco",
+        const DEFAULT_PRICES = {
+            roller: { name: "Roller (Basic)", cost: 8.70, type: 'tool', quantity: 1, id: 'roller' },
+            tubes: { name: "Tubes (250 ct Box)", cost: 3.80, type: 'wrapper', quantity: 250, id: 'tubes' },
+            tubes_budget: { name: "Tubes (200 ct Budget)", cost: 2.50, type: 'wrapper', quantity: 200, id: 'tubes_budget' },
+            papers: { name: "Papers (100 ct Pack)", cost: 1.63, type: 'wrapper', quantity: 100, id: 'papers' },
+            tobacco_bulk: { name: "Tobacco (16 oz Bulk Bag)", cost: 25.00, type: 'tobacco', cigs: 16 * CIGS_PER_OZ, id: 'tobacco_bulk' },
+            tobacco_8oz: { name: "Tobacco (8 oz Bag)", cost: 15.00, type: 'tobacco', cigs: 8 * CIGS_PER_OZ, id: 'tobacco_8oz' },
+            tobacco_mid: { name: "Tobacco (1.0 oz Mid Range)", cost: 3.80, type: 'tobacco', cigs: 1 * CIGS_PER_OZ, id: 'tobacco_mid' },
+            tobacco_budget: { name: "Tobacco (0.5 oz Budget)", cost: 1.63, type: 'tobacco', cigs: 0.5 * CIGS_PER_OZ, id: 'tobacco_budget' },
+        };
+        
+        let CURRENT_SETTINGS = {}; 
+        let neededItems = new Set();
+        let budget = 0;
+        let isDevMode = false;
+
+        // --- DOM ELEMENTS ---
+        const moneyAvailableInput = document.getElementById('moneyAvailable');
+        const editorBtn = document.getElementById('editorBtn');
+        const priceEditorModal = document.getElementById('priceEditorModal');
+        const saveAndCloseEditorBtn = document.getElementById('saveAndCloseEditorBtn');
+        const resetPricesBtn = document.getElementById('resetPricesBtn');
+        const editorInputsContainer = document.getElementById('editorInputs');
+        const advancedSettings = document.getElementById('advancedSettings');
+        const customThemeInputsContainer = document.getElementById('customThemeInputs');
+        const holidayThemeInputsContainer = document.getElementById('holidayThemeInputs');
+        const itemButtons = document.querySelectorAll('.item-button');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const customFooterMessage = document.getElementById('customFooterMessage');
+        const importantMessageModal = document.getElementById('importantMessageModal');
+        const importantMessageText = document.getElementById('importantMessageText');
+        const dismissMessageBtn = document.getElementById('dismissMessageBtn');
+
+        // --- UTILITY FUNCTIONS ---
+        
+        /**
+         * Checks if a date (MM-DD) is within a start/end range (MM-DD to MM-DD).
+         * Handles year rollover (e.g., Dec 15 to Jan 15).
+         */
+        function isDateInRange(dateStringMMDD, startStringMMDD, endStringMMDD) {
+            const parseDate = (mmdd) => {
+                const [month, day] = mmdd.split('-').map(Number);
+                // Use a proxy year (2000) for comparisons to ignore the actual year
+                return new Date(2000, month - 1, day); 
+            };
+            
+            const currentDate = parseDate(dateStringMMDD);
+            let startDate = parseDate(startStringMMDD);
+            let endDate = parseDate(endStringMMDD);
+
+            if (startDate.getTime() === endDate.getTime()) {
+                // Single day match
+                return currentDate.getTime() === startDate.getTime();
+            }
+
+            // Case 1: Standard Range (e.g., June 1 to June 30)
+            if (startDate <= endDate) {
+                return currentDate >= startDate && currentDate <= endDate;
+            } 
+            // Case 2: Year Rollover (e.g., Dec 15 to Jan 15)
+            else {
+                // Check if date is in the 'wrap-around' part (Dec) OR the 'new year' part (Jan)
+                return currentDate >= startDate || currentDate <= endDate;
+            }
+        }
+        
+        /**
+         * Converts a Date object to MM-DD string (e.g., '11-17').
+         */
+        function dateToMMDD(date) {
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${month}-${day}`;
+        }
+        
+        // --- THEME MANAGEMENT ---
+
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            const finalTheme = { ...DEFAULT_THEME, ...CURRENT_SETTINGS.customTheme, ...theme };
+
+            root.style.setProperty('--primary-color', finalTheme.primaryColor);
+            root.style.setProperty('--secondary-color', finalTheme.secondaryColor);
+            root.style.setProperty('--card-bg', finalTheme.cardBgRgba);
+            root.style.setProperty('--text-color', finalTheme.textColor);
+            root.style.setProperty('--sub-text-color', finalTheme.subTextColor);
+            // Use fallback image if URL is empty or invalid
+            const bgUrl = finalTheme.bgImage && finalTheme.bgImage.trim() !== '' ? finalTheme.bgImage : DEFAULT_THEME.bgImage;
+            root.style.setProperty('--main-bg-image', `url('${bgUrl}')`);
+            
+            // Apply messaging
+            customFooterMessage.textContent = CURRENT_SETTINGS.footerMessage;
+        }
+
+        function checkAndApplyHolidayTheme() {
+            const today = new Date();
+            const todayMMDD = dateToMMDD(today);
+            
+            const holidays = CURRENT_SETTINGS.holidayThemes || [];
+            
+            // Find the first active holiday that matches the date range
+            const activeHoliday = holidays.find(h => {
+                const start = h.startDate;
+                const end = h.endDate;
+                
+                if (!start || !end || start === end) return false;
+
+                // Validate MM-DD format before checking range
+                const mmddRegex = /^\d{2}-\d{2}$/;
+                if (!mmddRegex.test(start) || !mmddRegex.test(end)) {
+                    console.warn(`Invalid date format for holiday '${h.name}': Start=${start}, End=${end}. Skipping.`);
+                    return false;
+                }
+
+                return isDateInRange(todayMMDD, start, end);
+            });
+            
+            if (activeHoliday) {
+                // Apply the active holiday theme
+                applyTheme({ 
+                    ...CURRENT_SETTINGS.customTheme, // Start with custom theme defaults
+                    ...activeHoliday // Override with holiday specifics
+                });
+            } else {
+                // Apply the custom default theme
+                applyTheme(CURRENT_SETTINGS.customTheme);
+            }
+        }
+        
+        function checkAndShowImportantMessage() {
+            const msg = CURRENT_SETTINGS.importantMessage?.trim();
+            const lastSeen = CURRENT_SETTINGS.lastSeenMessage?.trim();
+
+            if (msg && msg !== lastSeen) {
+                importantMessageText.textContent = msg;
+                importantMessageModal.classList.remove('hidden');
+            } else {
+                importantMessageModal.classList.add('hidden');
+            }
+        }
+        
+        async function dismissImportantMessage() {
+            const msg = CURRENT_SETTINGS.importantMessage?.trim();
+            if (msg) {
+                // Update the last seen message to the current message content
+                CURRENT_SETTINGS.lastSeenMessage = msg;
+                await saveSettings();
+            }
+            importantMessageModal.classList.add('hidden');
+        }
+
+        // --- FIREBASE / SETTINGS MANAGEMENT ---
+        
+        window.loadAndDisplayInitialState = async function(isFallback = false) {
+            loadingIndicator.classList.remove('hidden');
+
+            // Default state before loading
+            CURRENT_SETTINGS = { 
+                prices: DEFAULT_PRICES, 
+                taxRate: INITIAL_TAX_RATE, 
+                customTheme: DEFAULT_THEME, 
+                holidayThemes: [], 
+                ...DEFAULT_MESSAGING 
+            };
+            
+            if (!isFallback && isAuthReady && db && userId) {
+                try {
+                    const docSnap = await getDoc(SETTINGS_DOC_REF(userId));
+                    if (docSnap.exists()) {
+                        const stored = docSnap.data();
+                        console.log("Settings loaded from Firestore for user:", userId);
+
+                        // 1. Load Prices
+                        const loadedPrices = Object.keys(DEFAULT_PRICES).reduce((acc, key) => {
+                            acc[key] = {
+                                ...DEFAULT_PRICES[key],
+                                cost: parseFloat(stored.prices?.[key]?.cost) || DEFAULT_PRICES[key].cost
+                            };
+                            return acc;
+                        }, {});
+
+                        // 2. Load Tax Rate
+                        const loadedTaxRate = (parseFloat(stored.taxRate) >= 0) ? parseFloat(stored.taxRate) : INITIAL_TAX_RATE;
+                        
+                        // 3. Load Themes
+                        const loadedCustomTheme = stored.customTheme ? { ...DEFAULT_THEME, ...stored.customTheme } : DEFAULT_THEME;
+                        const loadedHolidayThemes = stored.holidayThemes || [];
+                        
+                        // 4. Load Messaging
+                        const loadedMessaging = { 
+                            footerMessage: stored.footerMessage || DEFAULT_MESSAGING.footerMessage,
+                            importantMessage: stored.importantMessage || DEFAULT_MESSAGING.importantMessage,
+                            lastSeenMessage: stored.lastSeenMessage || DEFAULT_MESSAGING.lastSeenMessage,
+                        };
+
+                        CURRENT_SETTINGS = {
+                            prices: loadedPrices,
+                            taxRate: loadedTaxRate,
+                            customTheme: loadedCustomTheme,
+                            holidayThemes: loadedHolidayThemes,
+                            ...loadedMessaging
+                        };
+                    } else {
+                        console.log("No settings found in Firestore. Using defaults.");
+                    }
+                } catch (e) {
+                    console.error("Error fetching settings from Firestore. Using defaults.", e);
+                }
+            } else {
+                console.warn("Firebase not available or not ready. Using default hardcoded settings.");
+            }
+
+            loadingIndicator.classList.add('hidden');
+            checkAndApplyHolidayTheme();
+            checkAndShowImportantMessage(); // Check for pop-up after loading
+            calculateOptimalPlan();
+            document.getElementById('planDetails').innerHTML = '<p class="text-center text-text-sub pt-8">Select items and enter a budget to calculate the plan.</p>';
+        };
+        
+        async function saveSettings() {
+            if (!isAuthReady || !db || !userId) {
+                console.error("Cannot save settings: Firebase not ready.");
+                return;
+            }
+            
+            try {
+                // Only save the cost properties for prices
+                const pricesToSave = Object.keys(CURRENT_SETTINGS.prices).reduce((acc, key) => {
+                    acc[key] = { cost: CURRENT_SETTINGS.prices[key].cost };
+                    return acc;
+                }, {});
+                
+                // Filter out empty holiday slots before saving
+                const holidaysToSave = CURRENT_SETTINGS.holidayThemes.filter(h => 
+                    h.name && h.name.trim() !== '' && 
+                    h.startDate && h.startDate.trim() !== '' && 
+                    h.endDate && h.endDate.trim() !== ''
+                );
+
+                const settingsToStore = {
+                    prices: pricesToSave,
+                    taxRate: CURRENT_SETTINGS.taxRate,
+                    customTheme: CURRENT_SETTINGS.customTheme,
+                    holidayThemes: holidaysToSave,
+                    footerMessage: CURRENT_SETTINGS.footerMessage,
+                    importantMessage: CURRENT_SETTINGS.importantMessage,
+                    lastSeenMessage: CURRENT_SETTINGS.lastSeenMessage, // Saved seen status
+                };
+
+                await setDoc(SETTINGS_DOC_REF(userId), settingsToStore, { merge: true });
+                console.log("Settings successfully saved to Firestore.");
+            } catch (e) {
+                console.error("Error saving settings to Firestore.", e);
+            }
+        }
+        
+        async function resetSettings() {
+            CURRENT_SETTINGS = { 
+                prices: DEFAULT_PRICES, 
+                taxRate: INITIAL_TAX_RATE, 
+                customTheme: DEFAULT_THEME, 
+                holidayThemes: [], 
+                ...DEFAULT_MESSAGING 
+            };
+            await saveSettings(); // Save the reset state
+            renderEditorInputs(); // Redraw editor
+            checkAndApplyHolidayTheme();
+            calculateOptimalPlan();
+        }
+
+        // --- EDITOR UI FUNCTIONS ---
+        
+        function createInput(id, label, value, type = 'number', unit = '', min = '0', step = '0.01', isColor = false, className = '', isRgba = false) {
+            const inputType = isColor ? 'color' : type;
+            const inputClass = `editor-input w-full p-3 ${isColor ? 'h-10' : 'pl-3'} ${className} bg-gray-700 border border-gray-600 rounded-lg focus:ring-primary focus:border-primary transition duration-150 text-white shadow-md text-sm`;
+            const valueAttr = `value="${value}"`;
+
+            let innerHtml = '';
+            
+            if (isColor && !isRgba) {
+                 innerHtml = `
+                    <div class="relative rounded-lg shadow-sm w-1/3 flex justify-end">
+                        <input type="color" id="${id}" ${valueAttr} 
+                               data-setting-id="${id}" data-type="${type}"
+                               class="${inputClass} h-10 w-10 p-1">
+                    </div>
+                `;
+            } else if (isRgba) {
+                 innerHtml = `
+                    <div class="relative rounded-lg shadow-sm w-1/3">
+                        <input type="text" id="${id}" ${valueAttr} 
+                               data-setting-id="${id}" data-type="${type}"
+                               class="${inputClass} editor-input-rgba text-xs text-center p-1">
+                    </div>
+                `;
+            } else {
+                innerHtml = `
+                    <div class="relative rounded-lg shadow-sm w-1/3">
+                        <input type="${inputType}" id="${id}" ${valueAttr} min="${min}" step="${step}" 
+                               data-setting-id="${id}" data-type="${type}"
+                               class="${inputClass} ${unit ? 'text-right pr-7' : ''} ${className}">
+                        ${unit ? `<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><span class="text-gray-500 sm:text-sm">${unit}</span></div>` : ''}
+                    </div>
+                `;
+            }
+
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center';
+            div.innerHTML = `
+                <label for="${id}" class="text-sm font-medium text-gray-300 w-2/3">${label}</label>
+                ${innerHtml}
+            `;
+            return div;
+        }
+
+        function renderEditorInputs() {
+            editorInputsContainer.innerHTML = '';
+            customThemeInputsContainer.innerHTML = '';
+            holidayThemeInputsContainer.innerHTML = '';
+            
+            // 1. Tax Rate Input
+            editorInputsContainer.appendChild(createInput(
+                'taxRateInput', 
+                'Sales Tax Rate', 
+                (CURRENT_SETTINGS.taxRate * 100).toFixed(3), 
+                'number', 
+                '%', 
+                '0', 
+                '0.001',
+                false,
+                'text-right'
+            ));
+            
+            // 2. Price Inputs
+            const priceHeader = document.createElement('h5');
+            priceHeader.className = 'text-lg font-semibold text-white border-b border-gray-600 pb-2 pt-4 mt-4';
+            priceHeader.textContent = 'Product Prices ($)';
+            editorInputsContainer.appendChild(priceHeader);
+
+            Object.values(CURRENT_SETTINGS.prices).forEach(item => {
+                editorInputsContainer.appendChild(createInput(
+                    `cost-${item.id}`,
+                    item.name,
+                    CURRENT_SETTINGS.prices[item.id].cost.toFixed(2),
+                    'number',
+                    '$'
+                ));
+            });
+            
+            // 3. Custom Theme Inputs (Advanced/Dev Mode Only)
+            document.getElementById('footerMessageInput').value = CURRENT_SETTINGS.footerMessage;
+            document.getElementById('importantMessageInput').value = CURRENT_SETTINGS.importantMessage;
+
+            customThemeInputsContainer.appendChild(createInput(
+                'customBgImage', 'Background Image URL/Base64', CURRENT_SETTINGS.customTheme.bgImage, 'text', null, null, null, false, 'w-full w-full'
+            ));
+            customThemeInputsContainer.appendChild(createInput(
+                'customPrimaryColor', 'Primary Color (Action)', CURRENT_SETTINGS.customTheme.primaryColor, 'text', null, null, null, true
+            ));
+            customThemeInputsContainer.appendChild(createInput(
+                'customSecondaryColor', 'Secondary Color (Accent)', CURRENT_SETTINGS.customTheme.secondaryColor, 'text', null, null, null, true
+            ));
+            customThemeInputsContainer.appendChild(createInput(
+                'customTextColor', 'Main Text Color', CURRENT_SETTINGS.customTheme.textColor, 'text', null, null, null, true
+            ));
+             customThemeInputsContainer.appendChild(createInput(
+                'customSubTextColor', 'Sub Text Color', CURRENT_SETTINGS.customTheme.subTextColor, 'text', null, null, null, true
+            ));
+            customThemeInputsContainer.appendChild(createInput(
+                'customCardBgRgba', 'Card Background (RGBA)', CURRENT_SETTINGS.customTheme.cardBgRgba, 'text', null, null, null, false, '', true
+            ));
+            
+            // 4. Holiday Theme Inputs (Advanced/Dev Mode Only)
+            
+            // Ensure there are 6 slots for editing/viewing
+            const holidaySlots = Array(6).fill(null).map((_, index) => CURRENT_SETTINGS.holidayThemes[index] || {});
+
+            holidaySlots.forEach((holiday, index) => {
+                const h = { ...DEFAULT_THEME, ...holiday }; // Merge with defaults for missing color values
+                const holidayId = `h${index}`;
+                const div = document.createElement('div');
+                div.className = 'border border-gray-600 p-3 rounded-lg space-y-2';
+                div.innerHTML = `
+                    <h6 class="font-bold text-primary">Holiday Slot ${index + 1}</h6>
+                    
+                    <label class="block text-xs text-text-sub">Holiday Name</label>
+                    <input type="text" id="${holidayId}-name" data-holiday-slot="${index}" data-field="name" value="${h.name || ''}" placeholder="e.g., Christmas" class="editor-holiday-input w-full p-2 bg-gray-600 rounded text-sm text-white">
+
+                    <label class="block text-xs text-text-sub mt-2">Start/End Date (MM-DD)</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="${holidayId}-startDate" data-holiday-slot="${index}" data-field="startDate" value="${h.startDate || ''}" placeholder="MM-DD (e.g., 12-01)" pattern="\\d{2}-\\d{2}" class="editor-holiday-input w-1/2 p-2 bg-gray-600 rounded text-sm text-center text-white">
+                        <input type="text" id="${holidayId}-endDate" data-holiday-slot="${index}" data-field="endDate" value="${h.endDate || ''}" placeholder="MM-DD (e.g., 01-05)" pattern="\\d{2}-\\d{2}" class="editor-holiday-input w-1/2 p-2 bg-gray-600 rounded text-sm text-center text-white">
+                    </div>
+
+                    <label class="block text-xs text-text-sub mt-2">Background Image URL/Base64</label>
+                    <input type="text" id="${holidayId}-bgImage" data-holiday-slot="${index}" data-field="bgImage" value="${h.bgImage || ''}" class="editor-holiday-input w-full p-2 bg-gray-600 rounded text-sm text-white">
+
+                    <label class="block text-xs text-text-sub mt-2">Theme Colors</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="${holidayId}-primaryColor" data-holiday-slot="${index}" data-field="primaryColor" value="${h.primaryColor}" class="editor-holiday-input h-8 w-8 p-1 bg-gray-600 rounded cursor-pointer">
+                            <span class="text-white">Primary</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="${holidayId}-secondaryColor" data-holiday-slot="${index}" data-field="secondaryColor" value="${h.secondaryColor}" class="editor-holiday-input h-8 w-8 p-1 bg-gray-600 rounded cursor-pointer">
+                            <span class="text-white">Secondary</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="${holidayId}-textColor" data-holiday-slot="${index}" data-field="textColor" value="${h.textColor}" class="editor-holiday-input h-8 w-8 p-1 bg-gray-600 rounded cursor-pointer">
+                            <span class="text-white">Text</span>
+                        </div>
+                         <div class="flex items-center space-x-2">
+                            <input type="color" id="${holidayId}-subTextColor" data-holiday-slot="${index}" data-field="subTextColor" value="${h.subTextColor}" class="editor-holiday-input h-8 w-8 p-1 bg-gray-600 rounded cursor-pointer">
+                            <span class="text-white">Sub Text</span>
+                        </div>
+                    </div>
+                    
+                    <label class="block text-xs text-text-sub mt-2">Card Background (RGBA)</label>
+                    <input type="text" id="${holidayId}-cardBgRgba" data-holiday-slot="${index}" data-field="cardBgRgba" value="${h.cardBgRgba || ''}" placeholder="rgba(R, G, B, A)" class="editor-holiday-input w-full p-2 bg-gray-600 rounded text-sm text-center text-white">
+
+                `;
+                holidayThemeInputsContainer.appendChild(div);
+            });
+
+            if (isDevMode) {
+                advancedSettings.classList.remove('hidden');
+                editorBtn.textContent = 'Price Editing Tool (Settings) - DEV MODE ACTIVE';
+                editorBtn.classList.add('bg-secondary');
+                editorBtn.classList.remove('bg-gray-600');
+            } else {
+                advancedSettings.classList.add('hidden');
+                editorBtn.textContent = 'Price Editing Tool (Settings)';
+                editorBtn.classList.remove('bg-secondary');
+                editorBtn.classList.add('bg-gray-600');
+            }
+        }
+        
+        async function updatePricesFromEditor() {
+            // 1. Collect and update Tax Rate
+            const taxInput = document.getElementById('taxRateInput');
+            let newTaxRate = parseFloat(taxInput.value) / 100;
+            CURRENT_SETTINGS.taxRate = (isNaN(newTaxRate) || newTaxRate < 0) ? 0 : newTaxRate;
+
+            // 2. Collect and update prices
+            const priceInputs = editorInputsContainer.querySelectorAll('.editor-input:not([data-setting-id="taxRateInput"])');
+            priceInputs.forEach(input => {
+                const itemId = input.getAttribute('data-setting-id').replace('cost-', '');
+                let newCost = parseFloat(input.value);
+                
+                if (CURRENT_SETTINGS.prices[itemId]) {
+                    CURRENT_SETTINGS.prices[itemId].cost = (isNaN(newCost) || newCost <= 0) ? 0.01 : newCost;
+                }
+            });
+
+            // 3. Collect and update Messaging (Dev Mode Only)
+            if (isDevMode) {
+                CURRENT_SETTINGS.footerMessage = document.getElementById('footerMessageInput').value;
+                
+                // IMPORTANT: Do NOT update lastSeenMessage here. It's updated only when the user dismisses the pop-up.
+                CURRENT_SETTINGS.importantMessage = document.getElementById('importantMessageInput').value;
+            
+                // 4. Collect and update Custom Theme
+                CURRENT_SETTINGS.customTheme = {
+                    bgImage: document.getElementById('customBgImage').value || DEFAULT_THEME.bgImage,
+                    primaryColor: document.getElementById('customPrimaryColor').value || DEFAULT_THEME.primaryColor,
+                    secondaryColor: document.getElementById('customSecondaryColor').value || DEFAULT_THEME.secondaryColor,
+                    textColor: document.getElementById('customTextColor').value || DEFAULT_THEME.textColor,
+                    subTextColor: document.getElementById('customSubTextColor').value || DEFAULT_THEME.subTextColor,
+                    cardBgRgba: document.getElementById('customCardBgRgba').value || DEFAULT_THEME.cardBgRgba,
+                };
+
+                // 5. Collect and update Holiday Themes
+                let newHolidays = [];
+                const holidayInputs = document.querySelectorAll('.editor-holiday-input');
+                
+                // Use a map to group inputs by their slot index
+                const slotsMap = {};
+                holidayInputs.forEach(input => {
+                    const slot = input.getAttribute('data-holiday-slot');
+                    const field = input.getAttribute('data-field');
+                    slotsMap[slot] = slotsMap[slot] || {};
+                    slotsMap[slot][field] = input.value;
+                });
+
+                for (let i = 0; i < 6; i++) {
+                    const slot = slotsMap[i];
+                    if (slot && slot.name && slot.startDate && slot.endDate) {
+                        newHolidays.push({
+                            name: slot.name,
+                            startDate: slot.startDate,
+                            endDate: slot.endDate,
+                            bgImage: slot.bgImage || DEFAULT_THEME.bgImage,
+                            primaryColor: slot.primaryColor || DEFAULT_THEME.primaryColor,
+                            secondaryColor: slot.secondaryColor || DEFAULT_THEME.secondaryColor,
+                            textColor: slot.textColor || DEFAULT_THEME.textColor,
+                            subTextColor: slot.subTextColor || DEFAULT_THEME.subTextColor,
+                            cardBgRgba: slot.cardBgRgba || DEFAULT_THEME.cardBgRgba,
+                        });
+                    }
+                }
+                CURRENT_SETTINGS.holidayThemes = newHolidays;
+            }
+
+            await saveSettings();
+            checkAndApplyHolidayTheme();
+            checkAndShowImportantMessage(); // Re-check pop-up state
+            calculateOptimalPlan();
+        }
+
+        // --- CALCULATOR FUNCTIONS (Unchanged logic) ---
+
+        function calculateOptimalPlan() {
+            const moneyInputVal = moneyAvailableInput.value;
+            const currentBudget = parseFloat(moneyInputVal) || 0;
+            const currentPrices = CURRENT_SETTINGS.prices;
+            const currentTaxRate = CURRENT_SETTINGS.taxRate;
+            budget = currentBudget;
+            
+            if (currentBudget < 0) {
+                moneyAvailableInput.value = '0.00';
+                budget = 0;
+            }
+
+            if (neededItems.size === 0 || budget <= 0) {
+                displayError('Select items and enter a budget to calculate the plan.', true);
+                return;
+            }
+
+            let calculatedPlan = {
+                purchases: [], subTotal: 0, tax: 0, totalCost: 0, cigYield: Infinity, wrapperYield: Infinity, tobaccoYield: 0, hasRoller: false,
+            };
+
+            const checkAffordability = (cost, currentSubTotal) => (currentSubTotal + cost) * (1 + currentTaxRate) <= budget;
+            let tempSubTotal = 0;
+
+            if (neededItems.has('roller')) {
+                const item = currentPrices.roller;
+                if (checkAffordability(item.cost, tempSubTotal)) {
+                    calculatedPlan.purchases.push({ ...item, quantity: 1 });
+                    tempSubTotal += item.cost;
+                    calculatedPlan.hasRoller = true;
+                } else {
+                    displayError('Insufficient funds to buy the required Roller (with sales tax).');
+                    return; 
+                }
+            } else { calculatedPlan.hasRoller = true; }
+            
+            if (neededItems.has('tobacco_any')) {
+                const tobaccoOptions = ['tobacco_bulk', 'tobacco_8oz', 'tobacco_mid', 'tobacco_budget'];
+                let purchasedTobacco = false;
+
+                for (const itemId of tobaccoOptions) {
+                    const item = currentPrices[itemId];
+                    if (checkAffordability(item.cost, tempSubTotal)) { 
+                        calculatedPlan.purchases.push({ ...item, quantity: 1 });
+                        tempSubTotal += item.cost;
+                        calculatedPlan.tobaccoYield = item.cigs;
+                        purchasedTobacco = true;
+                        break; 
+                    }
+                }
+                if (!purchasedTobacco) { displayError('Insufficient funds to buy any Tobacco option (with sales tax).'); return; }
+            }
+
+            let wrapperNeeded = neededItems.has('tubes') || neededItems.has('papers');
+            if (wrapperNeeded) {
+                let wrapperItem = null;
+                
+                if (neededItems.has('tubes')) {
+                    if (checkAffordability(currentPrices.tubes.cost, tempSubTotal)) {
+                        wrapperItem = currentPrices.tubes;
+                    } 
+                    else if (checkAffordability(currentPrices.tubes_budget.cost, tempSubTotal)) {
+                        wrapperItem = currentPrices.tubes_budget;
+                    }
+                }
+                
+                if (neededItems.has('papers') && !wrapperItem) { 
+                    if (checkAffordability(currentPrices.papers.cost, tempSubTotal)) {
+                        wrapperItem = currentPrices.papers;
+                    }
+                }
+                
+                if (wrapperItem) {
+                    calculatedPlan.purchases.push({ ...wrapperItem, quantity: 1 });
+                    tempSubTotal += wrapperItem.cost;
+                    calculatedPlan.wrapperYield = wrapperItem.quantity;
+                } else {
+                    displayError('Insufficient funds to buy the required Wrappers (Tubes or Papers) including tax.');
+                    return; 
+                }
+            }
+
+            calculatedPlan.subTotal = tempSubTotal;
+            calculatedPlan.tax = calculatedPlan.subTotal * currentTaxRate;
+            calculatedPlan.totalCost = calculatedPlan.subTotal + calculatedPlan.tax;
+            calculatedPlan.cigYield = Math.min(calculatedPlan.wrapperYield, calculatedPlan.tobaccoYield);
+            
+            displayPlan(calculatedPlan, currentBudget);
+        }
+
+        function displayPlan(plan, initialBudget) {
+            const planDetails = document.getElementById('planDetails');
+            const subTotalSpan = document.getElementById('subTotal');
+            const taxAmountSpan = document.getElementById('taxAmount');
+            const taxDisplayLabel = document.getElementById('taxDisplayLabel');
+            const totalSpentSpan = document.getElementById('totalSpent');
+            const moneyRemainingSpan = document.getElementById('moneyRemaining');
+            const cigsMadeSpan = document.getElementById('cigsMade');
+            
+            let detailsHtml = '<p class="font-bold mb-2 text-text-main">Recommended Purchases:</p>';
+            
+            if (plan.purchases.length === 0) {
+                 detailsHtml += '<p class="text-center text-text-sub pt-4">No items purchased within budget, or essential items are missing.</p>';
+            } else {
+                detailsHtml += '<ul class="list-disc pl-5 space-y-1">';
+                const purchaseOrder = ['tool', 'tobacco', 'wrapper'];
+                plan.purchases.sort((a, b) => purchaseOrder.indexOf(a.type) - purchaseOrder.indexOf(b.type)).forEach(purchase => {
+                    detailsHtml += `<li><span class="font-semibold text-primary">${purchase.name}</span> for <span class="text-secondary">$${purchase.cost.toFixed(2)}</span></li>`;
+                });
+                detailsHtml += '</ul>';
+                
+                if (plan.cigYield < plan.tobaccoYield && plan.cigYield > 0) {
+                     detailsHtml += `<p class="mt-3 text-yellow-400 font-semibold">Note: Wrapper count is the bottleneck (Only ${plan.cigYield} total items possible).</p>`;
+                }
+            }
+            
+            const taxRatePercent = (CURRENT_SETTINGS.taxRate * 100).toFixed(3);
+
+            planDetails.innerHTML = detailsHtml;
+            subTotalSpan.textContent = `$${plan.subTotal.toFixed(2)}`;
+            taxAmountSpan.textContent = `$${plan.tax.toFixed(2)}`;
+            taxDisplayLabel.childNodes[0].nodeValue = `Tax (Custom ${taxRatePercent}%)`;
+            
+            totalSpentSpan.textContent = `$${plan.totalCost.toFixed(2)}`;
+            
+            const remaining = Math.max(0, initialBudget - plan.totalCost);
+            moneyRemainingSpan.textContent = `$${remaining.toFixed(2)}`;
+            
+            cigsMadeSpan.textContent = plan.cigYield === Infinity ? 0 : Math.max(0, Math.floor(plan.cigYield));
+        }
+        
+        function displayError(message, isInitialState = false) {
+            const planDetails = document.getElementById('planDetails');
+            const subTotalSpan = document.getElementById('subTotal');
+            const taxAmountSpan = document.getElementById('taxAmount');
+            const totalSpentSpan = document.getElementById('totalSpent');
+            const moneyRemainingSpan = document.getElementById('moneyRemaining');
+            const cigsMadeSpan = document.getElementById('cigsMade');
+            
+            planDetails.innerHTML = `<p class="text-center ${isInitialState ? 'text-text-sub' : 'text-danger font-bold'} pt-8">${message}</p>`;
+            subTotalSpan.textContent = '$0.00';
+            taxAmountSpan.textContent = '$0.00';
+            totalSpentSpan.textContent = '$0.00';
+            moneyRemainingSpan.textContent = `$${budget.toFixed(2)}`;
+            cigsMadeSpan.textContent = 0;
+        }
+
+        // --- EVENT HANDLERS ---
+        
+        function handleItemSelection(event) {
+            const button = event.currentTarget;
+            const itemId = button.getAttribute('data-item');
+            
+            if (itemId === 'tubes' || itemId === 'papers') {
+                const otherItemId = itemId === 'tubes' ? 'papers' : 'tubes';
+                const otherButton = document.querySelector(`[data-item="${otherItemId}"]`);
+                
+                if (neededItems.has(itemId)) {
+                    neededItems.delete(itemId);
+                    button.classList.remove('selected');
+                } else {
+                    neededItems.add(itemId);
+                    button.classList.add('selected');
+                    neededItems.delete(otherItemId);
+                    if (otherButton) { otherButton.classList.remove('selected'); }
+                }
+            } else {
+                if (neededItems.has(itemId)) {
+                    neededItems.delete(itemId);
+                    button.classList.remove('selected');
+                } else {
+                    neededItems.add(itemId);
+                    button.classList.add('selected');
+                }
+            }
+            calculateOptimalPlan();
+        }
+
+        const calculateAndCheckDevMode = () => {
+             const inputValue = moneyAvailableInput.value.toLowerCase().trim();
+             
+             if (inputValue === SECRET_CODE) {
+                 isDevMode = true;
+                 moneyAvailableInput.value = '100.00'; 
+                 
+                 editorBtn.textContent = 'Price Editing Tool (Settings) - DEV MODE ACTIVE';
+                 editorBtn.classList.add('bg-secondary');
+                 editorBtn.classList.remove('bg-gray-600');
+                 calculateOptimalPlan();
+                 displayError('Theme Dev Mode Activated! Settings saved to your profile.', false); 
+             } else {
+                 const parsedValue = parseFloat(inputValue);
+                 const isNumber = !isNaN(parsedValue);
+                 
+                 if (isNumber) {
+                    moneyAvailableInput.value = parsedValue.toFixed(2);
+                    calculateOptimalPlan();
+                 } else {
+                    displayError('Please enter a valid monetary value.', true);
+                    moneyAvailableInput.value = ''; 
+                 }
+             }
+        }
+        
+        // --- Event Listener Setup ---
+        
+        document.getElementById('calculateBtn').addEventListener('click', calculateAndCheckDevMode);
+
+        moneyAvailableInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                moneyAvailableInput.blur();
+                calculateAndCheckDevMode();
+            }
+        });
+
+        itemButtons.forEach(button => {
+            button.addEventListener('click', handleItemSelection);
+        });
+
+        editorBtn.addEventListener('click', () => {
+            if (!isAuthReady) {
+                console.error("Cannot open editor: Firebase not ready.");
+                return;
+            }
+            renderEditorInputs(); 
+            priceEditorModal.classList.remove('hidden');
+        });
+
+        saveAndCloseEditorBtn.addEventListener('click', async () => {
+            await updatePricesFromEditor();
+            priceEditorModal.classList.add('hidden');
+        });
+        
+        dismissMessageBtn.addEventListener('click', dismissImportantMessage);
+
+
+        resetPricesBtn.addEventListener('click', async () => {
+            await resetSettings();
+            resetPricesBtn.textContent = 'ALL Settings Reset!';
+            resetPricesBtn.classList.remove('bg-danger');
+            resetPricesBtn.classList.add('bg-primary');
+            setTimeout(() => {
+                resetPricesBtn.textContent = 'Reset ALL Settings';
+                resetPricesBtn.classList.add('bg-danger');
+                resetPricesBtn.classList.remove('bg-primary');
+            }, 1000);
+        });
+
+        // 6. Initial Load: Start the Firebase sequence
+        window.onload = initializeFirebase;
+
+    </script>
+</body>
+</html>
+
